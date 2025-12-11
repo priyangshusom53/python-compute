@@ -21,7 +21,11 @@ class TriangleMesh:
         self.n_triangles = n_triangles
         self.vertex_indices = vertex_indices
         self.n_vertices = n_vertices
-        self.positions = positions
+        if (positions.shape[1] == 3):
+            ones = np.ones((positions.shape[0], 1), dtype=positions.dtype)
+            self.positions = np.column_stack((positions, ones))
+        elif (positions.shape[1] == 4):
+            self.positions = positions
         self.tangents = tangents
         self.normals = normals
         self.uv = uv

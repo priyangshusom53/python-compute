@@ -21,7 +21,6 @@ import trimesh
 from trimesh.visual import TextureVisuals
 from trimesh.visual.material import (Material,SimpleMaterial,PBRMaterial as TrimeshPBRMaterial)
 
-import open3d as o3d
 import numpy as np
 
 import sys
@@ -239,8 +238,25 @@ class GLTFLoader(Loader):
             return None, None
 
 
+def create_open3d_mesh_from_trimesh(mesh:TriangleMesh):
+    """Convert a trimesh.Trimesh to an open3d.geometry.TriangleMesh (if open3d is installed)."""
+    if o3d is None:
+        raise RuntimeError("open3d not installed.")
+    try:
+        verts = np.asarray(mesh.positions)
+        faces = np.asarray(mesh.vertex_indices, dtype=np.int32)
+        o3d_mesh = o3d.geometry.TriangleMesh()
+        verts3 = verts[:,:3]
+        o3d_mesh.vertices = o3d.utility.Vector3dVector(verts3)
+        o3d_mesh.triangles = o3d.utility.Vector3iVector(faces)
+        o3d_mesh.compute_vertex_normals()
+    except Exception as e:
+        print(f"Error converting TriangleMesh to Open3D mesh: {e}")
+        raise
+    return o3d_mesh
 
-
+import open3d as o3d
+import copy
 
 if __name__ == "__main__":
     loader = GLTFLoader()
@@ -248,7 +264,25 @@ if __name__ == "__main__":
     example_path = r"D:\3D Models\sponza_gltf\scene.gltf"
     
     meshes,materials = loader.load(example_path)
+    print(meshes[0].positions.shape)
+    world_meshes:list[TriangleMesh] = []
+    
+    for mesh in meshes:
+        wrld_vertices = []
+        for vertex in mesh.positions:
+            wrld_vertex = mesh.object_to_world @ vertex
+            wrld_vertices.append(wrld_vertex)
+        wrld_mesh = copy.deepcopy(mesh)
+        wrld_mesh.positions = np.array(wrld_vertices)
+        world_meshes.append(wrld_mesh)
+
+    open3d_meshes = []    
+    for wrld_mesh in world_meshes:
+        open3d_meshes.append(create_open3d_mesh_from_trimesh(wrld_mesh))
+    
+    
     print(f"Loaded {len(meshes)} meshes and {len(materials)} materials.")
+    o3d.visualization.draw_geometries(open3d_meshes)
 
 
 
