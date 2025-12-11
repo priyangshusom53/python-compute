@@ -29,3 +29,32 @@ class TriangleMesh:
 
         print("TriangleMesh initialized with provided data.")
 
+    def to_np_arrays(self):
+        """Convert the TriangleMesh data to numpy arrays for further processing."""
+        data = {
+            "object_to_world": self.object_to_world,
+            "n_triangles": self.n_triangles,
+            "vertex_indices": self.vertex_indices,
+            "n_vertices": self.n_vertices,
+            "positions": self.positions,
+            "tangents": self.tangents,
+            "normals": self.normals,
+            "uv": self.uv,
+            "alpha_mask": self.alpha_mask
+        }
+        return data
+    
+    def add_tangents(self,tangents:np.ndarray):
+        self.tangents = tangents
+        print("Tangents added to TriangleMesh.")
+    
+    def add_uv(self,uv:np.ndarray):
+        self.uv = uv
+        print("UV coordinates added to TriangleMesh.")
+
+    def add_alpha_mask(self,alpha_mask:np.ndarray):
+        self.alpha_mask = alpha_mask
+        print("Alpha mask added to TriangleMesh.")
+
+
+

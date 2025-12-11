@@ -1,0 +1,9 @@
+[project]
+name = "python_raytracer"
+version = "0.1.0"
+description = ""
+
+[tool.setuptools]
+packages = ["python_raytracer"]
+package-dir = {"" = "src"}
+
