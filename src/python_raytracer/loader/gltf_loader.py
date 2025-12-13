@@ -122,7 +122,7 @@ class GLTFLoader(Loader):
     
             return meshes, pbr_materials
 
-    def _extract_material_nouse(self,mesh: trimesh.Trimesh) -> Dict[str, Any]:
+    def _extract_material_no_use(self,mesh: trimesh.Trimesh) -> Dict[str, Any]:
         """Extract material properties from a trimesh mesh"""
         material_info = {
             'name': None,
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     
     meshes,materials = loader.load(example_path)
     print(meshes[0].positions.shape)
-    world_meshes:list[TriangleMesh] = []
+    wrld_meshes:list[TriangleMesh] = []
     
     for mesh in meshes:
         wrld_vertices = []
@@ -274,10 +274,10 @@ if __name__ == "__main__":
             wrld_vertices.append(wrld_vertex)
         wrld_mesh = copy.deepcopy(mesh)
         wrld_mesh.positions = np.array(wrld_vertices)
-        world_meshes.append(wrld_mesh)
+        wrld_meshes.append(wrld_mesh)
 
     open3d_meshes = []    
-    for wrld_mesh in world_meshes:
+    for wrld_mesh in wrld_meshes:
         open3d_meshes.append(create_open3d_mesh_from_trimesh(wrld_mesh))
     
     
