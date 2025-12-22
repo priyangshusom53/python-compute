@@ -1,6 +1,8 @@
 import numpy as np
+from dataclasses import dataclass
 
 class TriangleMesh:
+
     def __init__(
         self,
         object_to_world: np.ndarray,
@@ -59,6 +61,7 @@ class TriangleMesh:
     def add_alpha_mask(self,alpha_mask:np.ndarray):
         self.alpha_mask = alpha_mask
         print("Alpha mask added to TriangleMesh.")
+
 
 
 

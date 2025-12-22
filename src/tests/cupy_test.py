@@ -48,7 +48,7 @@ void radial_gradient(float* output, int width, int height) {
     output[idx + 3] = 1.0f;          // Alpha
 }
 '''
-kernel = cudaloader.cuda_preprocessor(["../python_raytracer/pathtracer/cuda"], kernel)
+kernel = cudaloader.preprocess_cuda(["../python_raytracer/pathtracer/cuda"], kernel)
 print(kernel)
 mod = cp.RawModule(code=kernel)
 radial_kernel = mod.get_function("radial_gradient")

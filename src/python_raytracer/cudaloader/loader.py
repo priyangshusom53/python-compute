@@ -36,7 +36,8 @@ def inline_includes(
    print(file_path)
    # Prevent infinite include loops
    if file_path in already_included:
-      return f"\n// Skipping already included: {file_path.name}\n"
+      print(f"\nSkipping already included: {file_path.name}")
+      return
 
    # Mark this file as included
    already_included.add(file_path) 
@@ -52,6 +53,9 @@ def inline_includes(
          if match:
                include_name = match.group(1)
                include_path = find_include_file(include_name, include_paths).resolve()
+
+               if include_path in already_included:
+                  continue
 
                if not include_path.exists():
                   raise FileNotFoundError(
@@ -77,7 +81,7 @@ def inline_includes(
 
 
 
-def cuda_preprocessor(paths:list[str], kernel:str)-> str:
+def preprocess_cuda(paths:list[str], kernel:str)-> str:
 
    include_paths:list[Path] = []
 
@@ -96,6 +100,11 @@ def cuda_preprocessor(paths:list[str], kernel:str)-> str:
             include_name = match.group(1)
 
             include_path = find_include_file(include_name, include_paths).resolve()
+
+            # continue if file with include_path is 
+            # already included
+            if include_path in cuda_includes:
+               continue
 
             if not include_path.exists():
                raise FileNotFoundError(
