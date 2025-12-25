@@ -221,6 +221,29 @@ class Vec3Buffer:
       return self._buffer
 
 
+class Vec2Buffer:
+   """ uses numpy array with shape (N,2) as buffer for 2D vectors """
+
+   __slots__ = ["_buffer"]
+
+   def __init__(self, size:int, data:np.ndarray=None):
+      if data is None:
+            self._buffer = np.zeros((size, 2), dtype=np.float32)
+
+      elif isinstance(data, np.ndarray):
+         if data.ndim != 2 or data.shape[1] != 2:
+               raise ValueError("Array must have shape (N, 2).")
+
+         self._buffer = np.ascontiguousarray(data, dtype=np.float32)
+
+   def __len__(self):
+      return self._buffer.shape[0]
+      
+   @property
+   def array(self):
+      return self._buffer
+
+
 class Vec4Buffer:
    """ uses numpy array with shape (N,4) as buffer for 4D vectors """
 
