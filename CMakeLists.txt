@@ -14,7 +14,7 @@ find_package(pybind11 REQUIRED)
 
 # ---- BVH module ----
 pybind11_add_module(_bvh
-   src/python_raytracer/core/bvh/_bvh.cpp
+   src/python_raytracer/c_functions/bvh/_bvh.cpp
 )
 
 target_link_libraries(_bvh PRIVATE
@@ -23,6 +23,6 @@ target_link_libraries(_bvh PRIVATE
 
 # ---- Install into python package ----
 install(TARGETS _bvh
-   LIBRARY DESTINATION python_raytracer
-   RUNTIME DESTINATION python_raytracer
+   LIBRARY DESTINATION python_raytracer/c_functions
+   RUNTIME DESTINATION python_raytracer/c_functions
 )

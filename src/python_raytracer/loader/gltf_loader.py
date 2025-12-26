@@ -12,9 +12,9 @@ def json_loader(path:str):
 
 
 # GLTFLoader implementation
-from .scene_loader import Loader
-from ..core.geometry.triangle_mesh import TriangleMesh
-from ..core.material.pbr_material import PBRMaterial
+from python_raytracer.loader.scene_loader import FLoader
+from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
+from python_raytracer.core.material.pbr_material import PBRMaterial
 
 # trimesh types
 import trimesh 
@@ -29,7 +29,7 @@ import traceback
 from pathlib import Path
 from typing import Dict, Any
 
-class GLTFLoader(Loader):
+class GLTFLoader(FLoader):
     def load(self, path: str):
         '''
         convert to TriangleMesh arrays
@@ -98,21 +98,30 @@ class GLTFLoader(Loader):
                 mesh_world.apply_transform(transform)
                 world_meshes.append(mesh_world)
 
+
+                
                 mesh = geometry.copy()
+                triangles_vertices:np.ndarray = mesh.triangles
+                # get triangles bounds
+                min_coords = triangles_vertices.min(axis=1)
+                max_coords = triangles_vertices.max(axis=1)
+                all_triangle_bounds = np.stack([min_coords, max_coords], axis=1)
+                print(f"bounds array shape: {all_triangle_bounds.shape}")
                 mesh = TriangleMesh(
                     transform,
                     n_triangles=len(mesh.faces),
                     vertex_indices=mesh.faces,
                     n_vertices=len(mesh.vertices),
-                    positions=mesh.vertices,
+                    positions=mesh.vertices.astype(np.float32),
+                    bounds=all_triangle_bounds.astype(np.float32),
                     tangents=None,
-                    normals=mesh.vertex_normals,
+                    normals=mesh.vertex_normals.astype(np.float32),
                     uv= None,
-                    alpha_mask=None
                 )                                    
 
                 # Get uvs, materials of this mesh
                 uvs,pbr_material = self.load_material_and_uv_of_mesh(geometry)
+                # add uv to the mesh
                 mesh.uv = uvs
                 if not any(material.name == pbr_material.name for material in pbr_materials):
                     pbr_materials.append(pbr_material)
@@ -243,7 +252,7 @@ def create_open3d_mesh_from_trimesh(mesh:TriangleMesh):
     if o3d is None:
         raise RuntimeError("open3d not installed.")
     try:
-        verts = np.asarray(mesh.positions)
+        verts = np.asarray(mesh.positions.array)
         faces = np.asarray(mesh.vertex_indices, dtype=np.int32)
         o3d_mesh = o3d.geometry.TriangleMesh()
         verts3 = verts[:,:3]
@@ -264,16 +273,17 @@ if __name__ == "__main__":
     example_path = r"D:\3D Models\sponza_gltf\scene.gltf"
     
     meshes,materials = loader.load(example_path)
-    print(meshes[0].positions.shape)
+    #print(meshes[0].positions.shape)
     wrld_meshes:list[TriangleMesh] = []
     
     for mesh in meshes:
         wrld_vertices = []
-        for vertex in mesh.positions:
-            wrld_vertex = mesh.object_to_world @ vertex
-            wrld_vertices.append(wrld_vertex)
+        vertices = mesh.positions.array
+
         wrld_mesh = copy.deepcopy(mesh)
+        wrld_vertices = vertices @ mesh.transform.matrix.T
         wrld_mesh.positions = np.array(wrld_vertices)
+        wrld_mesh.set_positions(wrld_vertices)
         wrld_meshes.append(wrld_mesh)
 
     open3d_meshes = []    

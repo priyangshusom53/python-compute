@@ -25,6 +25,14 @@ class Transform:
       self._matrix = np.identity(4, dtype=np.float32)
       self._inverse_matrix = np.identity(4, dtype=np.float32)
 
+   @property
+   def matrix(self) -> np.ndarray:
+      return self._matrix
+   
+   @property
+   def inverse_matrix(self) -> np.ndarray:
+      return self._inverse_matrix
+
    @staticmethod
    def inverse(transform:'Transform') -> 'Transform':
       transform._matrix, transform._inverse_matrix = transform._inverse_matrix, transform._matrix
