@@ -1,7 +1,8 @@
 
-from dataclasses import dataclass
-
+from typing import Union
 import numpy as np
+
+from .transformation import Transform
 
 
 class Vec4:
@@ -219,6 +220,10 @@ class Vec3Buffer:
    @property
    def array(self):
       return self._buffer
+   
+   def flatten_array(self) -> np.ndarray:
+      """Return a flattened view of the buffer."""
+      return self._buffer.flatten()
 
 
 class Vec2Buffer:
@@ -242,6 +247,10 @@ class Vec2Buffer:
    @property
    def array(self):
       return self._buffer
+   
+   def flatten_array(self) -> np.ndarray:
+      """Return a flattened view of the buffer."""
+      return self._buffer.flatten()
 
 
 class Vec4Buffer:
@@ -267,7 +276,14 @@ class Vec4Buffer:
    def array(self):
       return self._buffer
    
-   def transform(self, matrix4x4:np.ndarray):
+   def flatten_array(self) -> np.ndarray:
+      """Return a flattened view of the buffer."""
+      return self._buffer.flatten()
+   
+   def transform(self, matrix4x4:Union[np.ndarray,Transform]):
+
+      if isinstance(matrix4x4, Transform):
+         matrix4x4 = matrix4x4._matrix
 
       if matrix4x4.shape != (4, 4):
          raise ValueError("Matrix must have shape (4, 4).")
