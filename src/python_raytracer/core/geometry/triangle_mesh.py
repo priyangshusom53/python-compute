@@ -9,10 +9,11 @@ class TriangleMesh:
         self,
         transform:np.ndarray,
         n_triangles: int,
-        vertex_indices: np.ndarray,
+        vertex_indices: np.ndarray, # shape (n_triangles, 3) np.int32 type
         n_vertices: int, # n_vertices = 3 * n_triangles
         positions: np.ndarray,
         bounds: np.ndarray = None, # shape(n_triangles, 2, 3)
+        world_bounds: np.ndarray = None,
         tangents: np.ndarray = None, 
         normals: np.ndarray = None,
         uv: np.ndarray = None, 
@@ -36,6 +37,9 @@ class TriangleMesh:
         elif (positions.shape[1] == 4):
 
             self.positions = Vec4Buffer(size=positions.shape[0], data=positions)
+
+        self.bounds = bounds
+        self.world_bounds = world_bounds
 
         if tangents is not None:
             if (tangents.shape[1] == 3):

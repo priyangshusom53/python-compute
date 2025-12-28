@@ -11,6 +11,11 @@ find_package(Python REQUIRED COMPONENTS Interpreter Development)
 # ---- pybind11 ----
 find_package(pybind11 REQUIRED)
 
+# c_python_types
+add_library(cpython INTERFACE)
+
+target_include_directories(cpython INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/python_raytracer/c_functions/c_python)
+
 
 # ---- BVH module ----
 pybind11_add_module(_bvh
@@ -19,10 +24,19 @@ pybind11_add_module(_bvh
 
 target_link_libraries(_bvh PRIVATE
    pybind11::module
+   cpython
 )
 
+# ---- AABB module ----
+pybind11_add_module(_aabb 
+   src/python_raytracer/c_functions/aabb.cpp
+)
+target_link_libraries(_aabb PRIVATE 
+   pybind11::module 
+   cpython)
+
 # ---- Install into python package ----
-install(TARGETS _bvh
+install(TARGETS _bvh _aabb
    LIBRARY DESTINATION python_raytracer/c_functions
    RUNTIME DESTINATION python_raytracer/c_functions
 )

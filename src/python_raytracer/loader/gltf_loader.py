@@ -81,6 +81,7 @@ class GLTFLoader(FLoader):
             return meshes, pbr_materials
         elif isinstance(scene, trimesh.Scene):
             for node_name in scene.graph.nodes:
+                # transform: local_to_world np.array(4,4)
                 transform, geometry_name = scene.graph[node_name]
         
                 # Skip nodes without geometry
@@ -99,7 +100,6 @@ class GLTFLoader(FLoader):
                 world_meshes.append(mesh_world)
 
 
-                
                 mesh = geometry.copy()
                 triangles_vertices:np.ndarray = mesh.triangles
                 # get triangles bounds
@@ -107,13 +107,30 @@ class GLTFLoader(FLoader):
                 max_coords = triangles_vertices.max(axis=1)
                 all_triangle_bounds = np.stack([min_coords, max_coords], axis=1)
                 print(f"bounds array shape: {all_triangle_bounds.shape}")
+
+
+                ones = np.ones((*triangles_vertices.shape[:-1], 1), dtype=triangles_vertices.dtype)
+                tri_h = np.concatenate([triangles_vertices, ones], axis=-1)
+
+                # convert to world space tranform with 
+                # transform.T as transform matrix and 
+                # tri_h is row-major
+                tri_world_h = tri_h @ transform.T
+                triangles_world = tri_world_h[..., :3]
+                # get triangles world bounds
+                min_coords = triangles_world.min(axis=1)
+                max_coords = triangles_world.max(axis=1)
+                all_triangle_world_bounds = np.stack([min_coords, max_coords], axis=1)
+
+
                 mesh = TriangleMesh(
                     transform,
                     n_triangles=len(mesh.faces),
-                    vertex_indices=mesh.faces,
+                    vertex_indices=np.asarray(mesh.faces,dtype=np.int32),
                     n_vertices=len(mesh.vertices),
                     positions=mesh.vertices.astype(np.float32),
                     bounds=all_triangle_bounds.astype(np.float32),
+                    world_bounds=all_triangle_world_bounds.astype(np.float32),
                     tangents=None,
                     normals=mesh.vertex_normals.astype(np.float32),
                     uv= None,
@@ -122,7 +139,7 @@ class GLTFLoader(FLoader):
                 # Get uvs, materials of this mesh
                 uvs,pbr_material = self.load_material_and_uv_of_mesh(geometry)
                 # add uv to the mesh
-                mesh.uv = uvs
+                mesh.set_uvs(uvs)
                 if not any(material.name == pbr_material.name for material in pbr_materials):
                     pbr_materials.append(pbr_material)
 
