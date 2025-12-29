@@ -5,6 +5,7 @@ from python_raytracer.loader.gltf_loader import GLTFLoader
 
 from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
 from python_raytracer.plots.o3dplots import plot_mesh_data
+from python_raytracer.bvh import bvh
 
 def main():
 
@@ -66,11 +67,23 @@ def main():
 
    world_vertices_list = [mesh.positions.array @ mesh.transform.matrix.T for mesh in meshes]
    world_vertices = np.concatenate(world_vertices_list, axis=0)
+
+   # calculate bvh
+   bvh_nodes_arr, ordered_triangles = bvh.calculate_bvh(all_world_bounds_cont,4)
+
+   bounds_min = bvh_nodes_arr["bounds_min"]
+   bounds_max = bvh_nodes_arr["bounds_max"]
+   
+   bvh_bounds = np.stack([bvh_nodes_arr["bounds_min"], bvh_nodes_arr["bounds_max"]], axis=1)
+
+
    plot_mesh_data(world_vertices,
                   all_indices,
                   all_normals,
                   all_uvs, 
-                  all_world_bounds_cont)
+                  bvh_bounds)
+
+   
 
 
 if __name__ == "__main__":

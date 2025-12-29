@@ -43,3 +43,22 @@ inline auto get_mutable_reference(c_numpy_arr<dtype>& arr) {
 	return ref;
 }
 
+template <typename T>
+py::array as_numpy_buffer(T* ptr, size_t count, py::object owner = py::none()) {
+	static_assert(std::is_standard_layout_v<T>, "T must be standard layout");
+	static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
+
+	return py::array(
+		py::buffer_info(
+			ptr,                              // pointer to data
+			sizeof(T),                        // size of one element
+			py::format_descriptor<uint8_t>::format(), // raw bytes
+			1,                                // 1D array
+			{ count * sizeof(T) },            // total bytes
+			{ sizeof(T) }                     // stride = sizeof(T)
+		),
+		owner                                // keeps memory alive
+	);
+}
+
+
