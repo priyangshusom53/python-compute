@@ -44,21 +44,36 @@ inline auto get_mutable_reference(c_numpy_arr<dtype>& arr) {
 }
 
 template <typename T>
-py::array as_numpy_buffer(T* ptr, size_t count, py::object owner = py::none()) {
-	static_assert(std::is_standard_layout_v<T>, "T must be standard layout");
-	static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
+py::array as_numpy_buffer(
+    T* ptr,
+    size_t count,
+    py::object owner)
+{
+    static_assert(std::is_standard_layout_v<T>);
+    static_assert(std::is_trivially_copyable_v<T>);
 
-	return py::array(
-		py::buffer_info(
-			ptr,                              // pointer to data
-			sizeof(T),                        // size of one element
-			py::format_descriptor<uint8_t>::format(), // raw bytes
-			1,                                // 1D array
-			{ count * sizeof(T) },            // total bytes
-			{ sizeof(T) }                     // stride = sizeof(T)
-		),
-		owner                                // keeps memory alive
-	);
+    // 2D byte array: (N, sizeof(T))
+    std::vector<ssize_t> shape = {
+        static_cast<ssize_t>(count),
+        static_cast<ssize_t>(sizeof(T))
+    };
+
+    std::vector<ssize_t> strides = {
+        static_cast<ssize_t>(sizeof(T)),
+        1
+    };
+
+    return py::array(
+        py::buffer_info(
+            ptr,
+            1,  // itemsize = 1 byte (uint8)
+            py::format_descriptor<uint8_t>::format(),
+            2,  // ndim
+            shape,
+            strides
+        ),
+        owner
+    );
 }
 
 

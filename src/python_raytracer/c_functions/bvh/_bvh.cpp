@@ -402,7 +402,7 @@ struct BVH {
         flatten_bvh_tree(&linearNodes[0], nodePtrs[0], &offset);
 
         auto nodes_buf = as_numpy_buffer<LinearBVHNode>
-            (&linearNodes[0], totalNodes, py::cast(this));
+            (&linearNodes[0],totalNodes, py::cast(this));
 
         auto tris_buf = as_numpy_buffer<int32_t>(
             orderedTriangles.data(), orderedTriangles.size(), py::cast(this));

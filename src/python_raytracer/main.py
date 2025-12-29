@@ -71,10 +71,16 @@ def main():
    # calculate bvh
    bvh_nodes_arr, ordered_triangles = bvh.calculate_bvh(all_world_bounds_cont,4)
 
-   bounds_min = bvh_nodes_arr["bounds_min"]
-   bounds_max = bvh_nodes_arr["bounds_max"]
+
+   # visualize only interior nodes
+   leaf_filter = bvh_nodes_arr["nTris"] == 0
+   bounds_min = bvh_nodes_arr["bounds_min"][leaf_filter]
+   bounds_max = bvh_nodes_arr["bounds_max"][leaf_filter]
    
-   bvh_bounds = np.stack([bvh_nodes_arr["bounds_min"], bvh_nodes_arr["bounds_max"]], axis=1)
+   bvh_bounds = np.ascontiguousarray(
+    np.stack([bounds_min, bounds_max], axis=1)
+   )
+
 
 
    plot_mesh_data(world_vertices,

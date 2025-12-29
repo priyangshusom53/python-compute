@@ -8,7 +8,6 @@ def calculate_bvh(world_aabbs, max_tris_in_node=1):
    nodes_raw, ordered_tris = bvh_c_instance.build(world_aabbs, max_tris_in_node)
 
    assert nodes_raw.base is None or nodes_raw.base is bvh_c_instance
-   assert nodes.dtype.itemsize == 56
 
 
    LinearBVHNode_dtype = np.dtype([
@@ -21,6 +20,7 @@ def calculate_bvh(world_aabbs, max_tris_in_node=1):
    ], align=True)
 
    nodes = nodes_raw.view(LinearBVHNode_dtype)
+   assert nodes.dtype.itemsize == 56
 
    return(nodes, ordered_tris)
 
