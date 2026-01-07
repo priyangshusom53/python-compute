@@ -72,6 +72,7 @@ def main():
    bvh_nodes_arr, ordered_triangles = bvh.calculate_bvh(all_world_bounds_cont,4)
 
 
+   print(bvh_nodes_arr.shape)
    # visualize only interior nodes
    leaf_filter = bvh_nodes_arr["nTris"] == 0
    bounds_min = bvh_nodes_arr["bounds_min"][leaf_filter]

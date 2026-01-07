@@ -4,8 +4,11 @@
 #include <pybind11/numpy.h>
 
 #include <vector>
+#include <initializer_list>
 
 namespace py = pybind11;
+
+using pyobject = py::object;
 
 template<typename dtype>
 using c_numpy_arr = py::array_t<dtype>;
@@ -43,37 +46,37 @@ inline auto get_mutable_reference(c_numpy_arr<dtype>& arr) {
 	return ref;
 }
 
-template <typename T>
-py::array as_numpy_buffer(
-    T* ptr,
-    size_t count,
-    py::object owner)
-{
-    static_assert(std::is_standard_layout_v<T>);
-    static_assert(std::is_trivially_copyable_v<T>);
+template<typename CType, typename NpType>
+py::array as_numpy_buffer(CType* ptr, 
+    std::initializer_list<ssize_t> shape, pyobject owner) {
 
-    // 2D byte array: (N, sizeof(T))
-    std::vector<ssize_t> shape = {
-        static_cast<ssize_t>(count),
-        static_cast<ssize_t>(sizeof(T))
-    };
+    static_assert(std::is_standard_layout_v<CType>);
+    static_assert(std::is_trivially_copyable_v<CType>);
 
-    std::vector<ssize_t> strides = {
-        static_cast<ssize_t>(sizeof(T)),
-        1
-    };
+    ssize_t _nDim = shape.size();
+    shape_t _shape(shape);
+    stride_t _strides(_nDim);
+    ssize_t _pyElemSize = sizeof(NpType);
+
+    _strides[_nDim-1] = _pyElemSize;
+    for (size_t i = _nDim - 2; i >= 0; ++i) {
+        _strides[i] = _shape[i+1] * _strides[i + 1];
+    }
 
     return py::array(
         py::buffer_info(
             ptr,
-            1,  // itemsize = 1 byte (uint8)
-            py::format_descriptor<uint8_t>::format(),
-            2,  // ndim
-            shape,
-            strides
-        ),
-        owner
-    );
+            _pyElemSize,
+            py::format_descriptor<NpType>::format(),
+            _nDim,
+            _shape,
+            _strides), owner);
 }
 
+template<typename StructT>
+py::array as_numpy_byte_buffer(StructT* ptr, ssize_t count, pyobject owner) {
+    
+    return as_numpy_buffer<StructT, uint8_t>(ptr, 
+        {count* static_cast<ssize_t>(sizeof(StructT))}, owner);
+}
 
