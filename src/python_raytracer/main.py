@@ -68,6 +68,11 @@ def main():
    world_vertices_list = [mesh.positions.array @ mesh.transform.matrix.T for mesh in meshes]
    world_vertices = np.concatenate(world_vertices_list, axis=0)
 
+   print("vertices:", world_vertices.shape)
+   print("indices:", all_indices.shape)
+   print("max index:", all_indices.max())
+
+
    # calculate bvh
    bvh_nodes_arr, ordered_triangles = bvh.calculate_bvh(all_world_bounds_cont,4)
 

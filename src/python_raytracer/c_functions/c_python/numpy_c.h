@@ -59,7 +59,7 @@ py::array as_numpy_buffer(CType* ptr,
     ssize_t _pyElemSize = sizeof(NpType);
 
     _strides[_nDim-1] = _pyElemSize;
-    for (size_t i = _nDim - 2; i >= 0; ++i) {
+    for (int i = static_cast<int>(_nDim) - 2; i >= 0; --i) {
         _strides[i] = _shape[i+1] * _strides[i + 1];
     }
 

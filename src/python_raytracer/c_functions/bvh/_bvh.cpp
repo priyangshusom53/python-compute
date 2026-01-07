@@ -404,9 +404,10 @@ struct BVH {
         auto nodes_buf = as_numpy_byte_buffer<LinearBVHNode>
             (&linearNodes[0], totalNodes, py::cast(this));
 
-        py::ssize_t nTriangles = static_cast<py::ssize_t>(orderedTriangles.size())/3;
+
+        py::ssize_t nTriangles = static_cast<py::ssize_t>(orderedTriangles.size());
         auto tris_buf = as_numpy_buffer<int32_t, int32_t>(
-            &orderedTriangles[0],{ nTriangles, 3},py::cast(this));
+            &orderedTriangles[0],{ nTriangles },py::cast(this));
 
 
         for (auto* n : nodePtrs) delete n;
