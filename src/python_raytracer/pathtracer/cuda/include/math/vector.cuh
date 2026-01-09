@@ -3,6 +3,59 @@
 
 // use float4 everywhere
 
+__device__ __inline__ float value_at(const float4 &v, unsigned int i)
+{
+   if (i == 0)
+      return v.x;
+   if (i == 1)
+      return v.y;
+   if (i == 2)
+      return v.z;
+   if (i == 3)
+      return v.w;
+   return 0;
+}
+
+__device__ __forceinline__ float4 make_vec()
+{
+   return make_float4(0, 0, 0, 0);
+}
+
+__device__ __forceinline__ float4 make_vec(float x, float y, float z)
+{
+   return make_float4(x, y, z, 0);
+}
+
+__device__ __forceinline__ float4 make_vec(float4 v)
+{
+   return make_float4(v.x, v.y, v.z, 0);
+}
+
+__device__ __forceinline__ float4 make_point()
+{
+   return make_float4(0, 0, 0, 1);
+}
+
+__device__ __forceinline__ float4 make_point(float x, float y, float z)
+{
+   return make_float4(x, y, z, 1);
+}
+
+__device__ __forceinline__ float4 make_point(float4 v)
+{
+   return make_float4(v.x, v.y, v.z, 1);
+}
+
+__device__ __forceinline__ float4 make_normal(float x, float y, float z)
+{
+   return make_float4(x, y, z, 0);
+}
+
+__device__ __forceinline__ float4 make_normal(float4 v)
+{
+   return make_float4(v.x, v.y, v.z, 0);
+}
+
 __device__ __forceinline__ float4 &operator+=(float4 &a, const float4 b)
 {
    a.x += b.x;

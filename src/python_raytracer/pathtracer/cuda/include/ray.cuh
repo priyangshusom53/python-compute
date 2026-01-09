@@ -4,7 +4,7 @@
 struct Ray
 {
    float4 o;
-   float4 d;
+   float4 d; // fourth component in d is tMax
 };
 
 #endif
