@@ -200,7 +200,7 @@ class Vec3:
 
 
 class Vec3Buffer:
-   """ uses numpy array with shape (N,3) as buffer for 3D vectors """
+   """ uses numpy array with shape (N,3) and dtype=float32 as buffer for 3D vectors """
 
    __slots__ = ["_buffer"]
 
@@ -227,7 +227,7 @@ class Vec3Buffer:
 
 
 class Vec2Buffer:
-   """ uses numpy array with shape (N,2) as buffer for 2D vectors """
+   """ uses numpy array with shape (N,2) and dtype=float32 as buffer for 2D vectors """
 
    __slots__ = ["_buffer"]
 
@@ -254,7 +254,7 @@ class Vec2Buffer:
 
 
 class Vec4Buffer:
-   """ uses numpy array with shape (N,4) as buffer for 4D vectors """
+   """ uses numpy array with shape (N,4) and dtype=float32 as buffer for 4D vectors """
 
    __slots__ = ["_buffer"]
 

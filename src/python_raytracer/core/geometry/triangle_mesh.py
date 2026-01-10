@@ -9,14 +9,15 @@ class TriangleMesh:
         self,
         transform:np.ndarray,
         n_triangles: int,
-        vertex_indices: np.ndarray, # shape (n_triangles, 3) np.int32 type
+        vertex_indices: np.ndarray, # shape (n_triangles, 3) np.uint32 type
         n_vertices: int, # n_vertices = 3 * n_triangles
         positions: np.ndarray,
         bounds: np.ndarray = None, # shape(n_triangles, 2, 3)
         world_bounds: np.ndarray = None,
         tangents: np.ndarray = None, 
         normals: np.ndarray = None,
-        uv: np.ndarray = None, 
+        uv: np.ndarray = None,
+        material_idx:int = None 
     ):
         """
         Constructor for a TriangleMesh with all required arguments typed.
@@ -26,7 +27,7 @@ class TriangleMesh:
         
         self.transform = Transform(transform)
         self.n_triangles = n_triangles
-        self.vertex_indices = vertex_indices
+        self.vertex_indices = vertex_indices.astype(dtype=np.uint32)
         self.n_vertices = n_vertices
         if (positions.shape[1] == 3):
 
@@ -38,14 +39,14 @@ class TriangleMesh:
 
             self.positions = Vec4Buffer(size=positions.shape[0], data=positions)
 
-        self.bounds = bounds
-        self.world_bounds = world_bounds
+        self.bounds = bounds.astype(dtype=np.float32)
+        self.world_bounds = world_bounds.astype(dtype=np.float32)
 
         if tangents is not None:
             if (tangents.shape[1] == 3):
 
-                ones = np.zeros((tangents.shape[0], 1), dtype=tangents.dtype)
-                tangents = np.column_stack((tangents, ones))
+                ones = np.zeros(shape=(tangents.shape[0], 1), dtype=tangents.dtype)
+                tangents = np.hstack((tangents,ones))
                 self.tangents = Vec4Buffer(size=tangents.shape[0], data=tangents)
             
             elif (tangents.shape[1] == 4):
@@ -64,6 +65,8 @@ class TriangleMesh:
         if uv is not None:
             self.uv = Vec2Buffer(size=uv.shape[0], data=uv)
 
+        if material_idx is not None:
+            self.material_idx = material_idx
 
         print("TriangleMesh initialized with provided data.")
 
@@ -101,6 +104,9 @@ class TriangleMesh:
     def set_uvs(self, uv:np.ndarray):
         self.uv = Vec2Buffer(size=uv.shape[0], data=uv)
 
+    def set_material_idx(self, mat_idx:int):
+        self.material_idx = mat_idx
+
     def to_np_arrays(self):
         """Convert the TriangleMesh data to numpy arrays for further processing."""
         data = {
@@ -113,16 +119,5 @@ class TriangleMesh:
             "uv": self.uv,
         }
         return data
-    
-    def add_tangents(self,tangents:np.ndarray):
-        self.tangents = tangents
-        print("Tangents added to TriangleMesh.")
-    
-    def add_uv(self,uv:np.ndarray):
-        self.uv = uv
-        print("UV coordinates added to TriangleMesh.")
-
-
-
 
 

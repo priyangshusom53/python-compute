@@ -3,17 +3,18 @@
 
 #include "bounds.cuh"
 #include "ray.cuh"
+#include "trianglemesh.cuh"
 
 #include "math/vector.cuh"
 #include "algo.cuh"
 
-struct SurfaceInteraction
+struct __align__(16) SurfaceInteraction
 {
    float4 p;
    float4 n;
 };
 
-__device__ __inline__ bool intersect_bound(const Bounds &b, const Ray &ray, float hitt0, float hitt1)
+__device__ __inline__ bool intersect_bound(const Bounds &b, const Ray &ray, float &hitt0, float &hitt1)
 {
    float t0 = 0, t1 = ray.d.w;
    for (unsigned int i = 0; i < 3; ++i)
@@ -33,5 +34,7 @@ __device__ __inline__ bool intersect_bound(const Bounds &b, const Ray &ray, floa
    hitt1 = t1;
    return true;
 }
+
+// __device__ bool intersect_triangle(const Ray &ray, TriangleMesh *meshes, const Triangle &tri, float &tHit, SurfaceInteraction &isect);
 
 #endif

@@ -7,7 +7,7 @@
 struct Ray;
 
 // matrix is row major
-struct Mat4
+struct __align__(16) Mat4
 {
    float4 r0;
    float4 r1;
@@ -183,7 +183,7 @@ __device__ __forceinline__ float4 transform_point(const Mat4 &m, const float4 p)
 
 // __device__ __forceinline__ float4 transform_normal(const Mat4 &m, const float4 n) {}
 
-struct Transform
+struct __align__(16) Transform
 {
    Mat4 matrix;
    Mat4 inv_matrix;

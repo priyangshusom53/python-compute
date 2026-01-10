@@ -54,6 +54,7 @@ class GLTFLoader(FLoader):
         # Scene handling
         world_meshes = []
         meshes:list[TriangleMesh] = []
+        pbr_material_idx:dict = {}
         pbr_materials:list[PBRMaterial] = []
     
         # Handle single mesh case
@@ -69,13 +70,12 @@ class GLTFLoader(FLoader):
                 positions=scene.vertices,
                 tangents=None,
                 normals=scene.vertex_normals,
-                uv= None,
-                alpha_mask=None
+                uv= None
             )                                    
             
             uvs,pbr_material = self.load_material_and_uv_of_mesh(scene)
             meshes[0].uv = uvs
-            
+            meshes[0].set_material_idx(0)
             pbr_materials = [pbr_material]
 
             return meshes, pbr_materials
@@ -106,7 +106,6 @@ class GLTFLoader(FLoader):
                 min_coords = triangles_vertices.min(axis=1)
                 max_coords = triangles_vertices.max(axis=1)
                 all_triangle_bounds = np.stack([min_coords, max_coords], axis=1)
-                print(f"bounds array shape: {all_triangle_bounds.shape}")
 
 
                 ones = np.ones((*triangles_vertices.shape[:-1], 1), dtype=triangles_vertices.dtype)
@@ -140,9 +139,11 @@ class GLTFLoader(FLoader):
                 uvs,pbr_material = self.load_material_and_uv_of_mesh(geometry)
                 # add uv to the mesh
                 mesh.set_uvs(uvs)
-                if not any(material.name == pbr_material.name for material in pbr_materials):
+                if pbr_material_idx.get(pbr_material.name) is None:
                     pbr_materials.append(pbr_material)
+                    pbr_material_idx[pbr_material.name] = len(pbr_materials) - 1
 
+                mesh.set_material_idx(pbr_material_idx.get(pbr_material.name))
                 meshes.append(mesh)
 
     
