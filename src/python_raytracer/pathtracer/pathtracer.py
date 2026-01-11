@@ -1,6 +1,6 @@
+import numpy as np
 
-
-from ..core.renderer.renderer import Renderer
+from python_raytracer.core.renderer.renderer import Renderer
 
 class PathTracer(Renderer):
 
@@ -8,4 +8,4 @@ class PathTracer(Renderer):
       pass
 
    def render_screen_extent(self,scene,extent):
-      pass
+      raise NotImplementedError
