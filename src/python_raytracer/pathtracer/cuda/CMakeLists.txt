@@ -22,8 +22,8 @@ set_target_properties(pathtracer_ptx PROPERTIES
 )
 
 add_custom_target(load_ptx ALL
-COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/ptx"
-COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_OBJECTS:pathtracer_ptx> "${CMAKE_BINARY_DIR}/$<CONFIG>/ptx"
+COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/ptx/$<CONFIG>"
+COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_OBJECTS:pathtracer_ptx> "${CMAKE_BINARY_DIR}/ptx/$<CONFIG>"
 COMMAND_EXPAND_LISTS
 DEPENDS pathtracer_ptx)
 

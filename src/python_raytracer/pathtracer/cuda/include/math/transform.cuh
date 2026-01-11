@@ -25,7 +25,7 @@ __device__ __forceinline__ Mat4 identity()
    return m;
 }
 
-__device__ __forceinline__ Mat4 &mat4_transpose(const Mat4 &m)
+__device__ __forceinline__ Mat4 mat4_transpose(const Mat4 &m)
 {
    Mat4 _m;
    _m.r0 = make_float4(m.r0.x, m.r1.x, m.r2.x, m.r3.x);
@@ -134,7 +134,7 @@ __device__ __forceinline__ float4 mat_mul(const Mat4 &m, const float4 v)
    return _v;
 }
 
-__device__ __forceinline__ Mat4 &mat_mul(const Mat4 &m1, const Mat4 &m2)
+__device__ __forceinline__ Mat4 mat_mul(const Mat4 &m1, const Mat4 &m2)
 {
    Mat4 _m;
    Mat4 m2T = mat4_transpose(m2);
@@ -189,7 +189,7 @@ struct __align__(16) Transform
    Mat4 inv_matrix;
 };
 
-__device__ __forceinline__ Transform &identity_transform()
+__device__ __forceinline__ Transform identity_transform()
 {
    Transform _t;
    _t.matrix = identity();
@@ -197,7 +197,7 @@ __device__ __forceinline__ Transform &identity_transform()
    return _t;
 }
 
-__device__ __forceinline__ Transform &translate_transform(float4 t)
+__device__ __forceinline__ Transform translate_transform(float4 t)
 {
    Transform _t;
    _t.matrix = translate(t);
@@ -205,7 +205,7 @@ __device__ __forceinline__ Transform &translate_transform(float4 t)
    return _t;
 }
 
-__device__ __forceinline__ Transform &scale_transform(const float4 s)
+__device__ __forceinline__ Transform scale_transform(const float4 s)
 {
    Transform _t;
    _t.matrix = scale(s);
@@ -230,7 +230,7 @@ __device__ __forceinline__ float4 transform_normal(const Transform &t, const flo
    return _n;
 }
 
-__device__ __forceinline__ Ray &transform_ray(const Transform &t, const Ray &ray)
+__device__ __forceinline__ Ray transform_ray(const Transform &t, const Ray &ray)
 {
    Ray _ray;
    _ray.o = transform_point(t.matrix, ray.o);

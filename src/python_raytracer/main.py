@@ -1,13 +1,20 @@
+import argparse
+import logging
 
 import numpy as np
 
+from python_raytracer.core.log import logger
 from python_raytracer.loader.gltf_loader import GLTFLoader
 
 from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
 from python_raytracer.plots.o3dplots import plot_mesh_data
 from python_raytracer.bvh import bvh
 
-def main():
+def main(debug:bool):
+
+   # setup log
+   logger.log_config()
+   logging.getLogger(__name__)
 
    # load the scene
    loader = GLTFLoader()
@@ -99,7 +106,10 @@ def main():
 
 
 if __name__ == "__main__":
-   main()
+   parser = argparse.ArgumentParser()
+   parser.add_argument("-debug","--debug",action="store_true",dest="debug")
+   args = parser.parse_args()
+   main(args.debug)
 
 
    

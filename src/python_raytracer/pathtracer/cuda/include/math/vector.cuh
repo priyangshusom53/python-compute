@@ -56,7 +56,7 @@ __device__ __forceinline__ float4 make_normal(float4 v)
    return make_float4(v.x, v.y, v.z, 0);
 }
 
-__device__ __forceinline__ float4 &operator+=(float4 &a, const float4 b)
+__device__ __forceinline__ float4 operator+=(float4 &a, const float4 b)
 {
    a.x += b.x;
    a.y += b.y;
@@ -74,7 +74,7 @@ __device__ __forceinline__
    return c;
 }
 
-__device__ __forceinline__ float4 &operator-=(float4 &a, const float4 b)
+__device__ __forceinline__ float4 operator-=(float4 &a, const float4 b)
 {
    a.x -= b.x;
    a.y -= b.y;
@@ -92,7 +92,7 @@ __device__ __forceinline__
    return c;
 }
 
-__device__ __forceinline__ float4 &operator*=(float4 &a, const float s)
+__device__ __forceinline__ float4 operator*=(float4 &a, const float s)
 {
    a.x *= s;
    a.y *= s;
