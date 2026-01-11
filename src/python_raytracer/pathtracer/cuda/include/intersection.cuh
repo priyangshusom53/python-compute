@@ -12,11 +12,11 @@
 
 struct __align__(16) SurfaceInteraction
 {
-   float4 p;
+   float4 p;			 // float4 is 16 byte aligned
    float4 n;
 	float2 uv;
-	float3 dpdu, dpdv;
-	// 64 bytes total
+	float3 dpdu, dpdv; // float3 is 16 byte aligned
+	// 80 bytes total
 };
 
 __device__ __inline__ bool intersect_bound(const Bounds &b, const Ray &ray, float &hitt0, float &hitt1)
