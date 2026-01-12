@@ -4,6 +4,7 @@
 #include "bounds.cuh"
 #include "ray.cuh"
 #include "trianglemesh.cuh"
+#include "bvh.cuh"
 
 #include "math/vector.cuh"
 #include "math/transform.cuh"
@@ -21,7 +22,7 @@ struct __align__(16) SurfaceInteraction
 
 __device__ __inline__ bool intersect_bound(const Bounds &b, const Ray &ray, float &hitt0, float &hitt1)
 {
-   float t0 = 0, t1 = ray.d.w;
+   float t0 = 0, t1 = ray.d.w; // tmax of ray
    for (unsigned int i = 0; i < 3; ++i)
    {
       float invRayDir = 1 / value_at(ray.d, i);
@@ -40,16 +41,41 @@ __device__ __inline__ bool intersect_bound(const Bounds &b, const Ray &ray, floa
    return true;
 }
 
-__device__ bool intersect_triangle(const Ray &ray, const TriangleMesh *meshes, const AttributeBuffers &buffers, const Triangle &triangle, float &tHit, SurfaceInteraction &isect)
+__device__ __inline__ bool intersect_bound(const Ray &ray, const Bounds &b, const float3 &invDir, const int dirIsNeg[3]){
+	float tMin =  (b[  dirIsNeg[0]].x - ray.o.x) * invDir.x;
+	float tMax =  (b[1-dirIsNeg[0]].x - ray.o.x) * invDir.x;
+	float tyMin = (b[  dirIsNeg[1]].y - ray.o.y) * invDir.y;
+	float tyMax = (b[1-dirIsNeg[1]].y - ray.o.y) * invDir.y;
+	if (tMin > tyMax || tyMin > tMax) 
+      return false;
+	if (tyMin > tMin) tMin = tyMin; 
+	if (tyMax < tMax) tMax = tyMax;
+	float tzMin = (b[  dirIsNeg[2]].z - ray.o.z) * invDir.z; 
+	float tzMax = (b[1-dirIsNeg[2]].z - ray.o.z) * invDir.z;
+	if (tMin > tzMax || tzMin > tMax) 
+		return false; 
+	if (tzMin > tMin) tMin = tzMin; 
+	if (tzMax < tMax) tMax = tzMax;
+	// ray.d.w is tmax of ray
+	return (tMin < ray.d.w) && (tMax > 0); 
+}
+
+__device__ bool intersect_triangle(
+	const Ray &ray, 
+	const TriangleMesh *meshes, 
+	const AttributeBuffers &buffers, 
+	const Triangle &triangle, 
+	float &tHit, 
+	SurfaceInteraction &isect)
 {
    // transform triangle vertices to ray triangle intersection space
 
    // get vertex data from attribute buffers
    TriangleMesh mesh = meshes[triangle.meshIdx];
    int globalTriIdx = (mesh.firstTriangleIdx+triangle.triangleIdx);
-	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].x < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow")
-	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].y < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow")
-	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].z < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow")
+	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].x < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
+	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].y < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
+	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].z < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
 
    float4 p0 = buffers.vertexBuffer[buffers.indexBuffer[globalTriIdx].x];
    float4 p1 = buffers.vertexBuffer[buffers.indexBuffer[globalTriIdx].y];
@@ -139,6 +165,47 @@ __device__ bool intersect_triangle(const Ray &ray, const TriangleMesh *meshes, c
 				 b2 * buffers.normalBuffer[buffers.indexBuffer[globalTriIdx].z];
 	tHit = t;
 	return true;
+}
+
+__device__ bool intersect_bvh(
+	const Ray& ray,
+	const LinearBVHNode *bvhNodes, 
+	const TriangleMesh *meshes, 
+	const AttributeBuffers &buffers, 
+	const Triangle *orderedTriangles, 
+	float &tHit, 
+	SurfaceInteraction &isect){
+		bool hit = false;
+		float3 invDir = make_float3(1/ray.d.x,1/ray.d.y,1/ray.d.z);
+		int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z<0};
+		int toVisitOffset = 0, currentNodeIndex = 0;
+		unsigned short nodesToVisit[64];
+		while (true) {
+			const LinearBVHNode node = bvhNodes[currentNodeIndex];
+			if(intersect_bound(ray,node.b,invDir,dirIsNeg)){
+				if(node.nTris > 0){
+					CUDA_ASSERT(node.nTris < 255, "number of nodes exceed unsigned char limit");
+					for(unsigned char i = 0; i < node.nTris; ++i){
+						if(intersect_triangle(ray, meshes,buffers, orderedTriangles[node.offset + i],tHit,isect))
+								hit = true;
+					}
+					if (toVisitOffset == 0) break;
+					currentNodeIndex = nodesToVisit[--toVisitOffset];
+				}else{
+					if (dirIsNeg[node.axis]) {
+						nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
+						currentNodeIndex = node.offset;
+					} else {
+						nodesToVisit[toVisitOffset++] = node.offset;
+						currentNodeIndex = currentNodeIndex + 1;
+					}
+				}
+			}else{
+				if(toVisitOffset == 0) break;
+				currentNodeIndex = nodesToVisit[--toVisitOffset];
+			}
+		}	
+		return hit;
 }
 
 #endif

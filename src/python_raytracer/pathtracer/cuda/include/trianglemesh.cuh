@@ -5,18 +5,18 @@
 
 struct __align__(16) TriangleMesh
 {
-   unsigned int firstTriangleIdx;
-   unsigned int numTriangles;
-   unsigned int numVertices;
-   unsigned int firstVertexIdx;
-   unsigned int materialIdx;
+   int firstTriangleIdx;
+   int numTriangles;
+   int numVertices;
+   int firstVertexIdx;
+   int materialIdx;
    Transform transform;
 };
 
 struct __align__(16) Triangle
 {
-   unsigned int meshIdx;
-   unsigned int triangleIdx;
+   int meshIdx;
+   int triangleIdx;
 };
 
 struct __align__(16) AttributeBuffers
