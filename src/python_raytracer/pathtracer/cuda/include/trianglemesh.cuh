@@ -21,10 +21,10 @@ struct __align__(16) Triangle
 
 struct __align__(16) AttributeBuffers
 {
-   int3 *indexBuffer;    // 4 bytes
-   float4 *vertexBuffer; // 4 bytes
-   float4 *normalBuffer; // 4 bytes
-   float2 *uvBuffer;     // 4 bytes
+   const int3 *indexBuffer;    // 4 bytes
+   const float4 *vertexBuffer; // 4 bytes
+   const float4 *normalBuffer; // 4 bytes
+   const float2 *uvBuffer;     // 4 bytes
 };
 
 #endif

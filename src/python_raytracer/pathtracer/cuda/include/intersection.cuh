@@ -20,7 +20,7 @@ struct __align__(16) SurfaceInteraction
 	// 80 bytes total
 };
 
-__device__ __inline__ bool intersect_bound(const Bounds &b, const Ray &ray, float &hitt0, float &hitt1)
+__device__ __inline__ bool intersect_bound(const Ray &ray, const Bounds &b, float &hitt0, float &hitt1)
 {
    float t0 = 0, t1 = ray.d.w; // tmax of ray
    for (unsigned int i = 0; i < 3; ++i)
@@ -60,6 +60,7 @@ __device__ __inline__ bool intersect_bound(const Ray &ray, const Bounds &b, cons
 	return (tMin < ray.d.w) && (tMax > 0); 
 }
 
+// triangle comes under geometric primitive that updates Ray's tMax to intersection t
 __device__ bool intersect_triangle(
 	const Ray &ray, 
 	const TriangleMesh *meshes, 
@@ -124,9 +125,9 @@ __device__ bool intersect_triangle(
 	p1t.z *= Sz;
 	p2t.z *= Sz;
 	float tScaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-	if(det< 0 && tScaled >= 0)
+	if(det< 0 && (tScaled >= 0 || tScaled < ray.d.w * det))
 		return false;
-	else if (det > 0 && tScaled <= 0)
+	else if (det > 0 && (tScaled <= 0 || tScaled > ray.d.w * det))
 		return false;
 	float invDet=1/det;
 	float b0 = e0 * invDet;
@@ -163,17 +164,30 @@ __device__ bool intersect_triangle(
 	isect.n = b0 * buffers.normalBuffer[buffers.indexBuffer[globalTriIdx].x] +
 				 b1 * buffers.normalBuffer[buffers.indexBuffer[globalTriIdx].y] +
 				 b2 * buffers.normalBuffer[buffers.indexBuffer[globalTriIdx].z];
+	isect.n = normalize(isect.n);
 	tHit = t;
 	return true;
 }
 
+__device__ bool intersect_triangle(
+	Ray &ray, 
+	const TriangleMesh *meshes, 
+	const AttributeBuffers &buffers, 
+	const Triangle &triangle,  
+	SurfaceInteraction &isect){
+		float tHit;
+		if(!(intersect_triangle(ray,meshes,buffers,triangle,tHit,isect)))
+			return false;
+		ray.d.w = tHit;
+		return true;
+}
+
 __device__ bool intersect_bvh(
-	const Ray& ray,
+	Ray& ray,
 	const LinearBVHNode *bvhNodes, 
 	const TriangleMesh *meshes, 
 	const AttributeBuffers &buffers, 
 	const Triangle *orderedTriangles, 
-	float &tHit, 
 	SurfaceInteraction &isect){
 		bool hit = false;
 		float3 invDir = make_float3(1/ray.d.x,1/ray.d.y,1/ray.d.z);
@@ -186,7 +200,7 @@ __device__ bool intersect_bvh(
 				if(node.nTris > 0){
 					CUDA_ASSERT(node.nTris < 255, "number of nodes exceed unsigned char limit");
 					for(unsigned char i = 0; i < node.nTris; ++i){
-						if(intersect_triangle(ray, meshes,buffers, orderedTriangles[node.offset + i],tHit,isect))
+						if(intersect_triangle(ray, meshes,buffers, orderedTriangles[node.offset + i],isect))
 								hit = true;
 					}
 					if (toVisitOffset == 0) break;
@@ -194,9 +208,11 @@ __device__ bool intersect_bvh(
 				}else{
 					if (dirIsNeg[node.axis]) {
 						nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
+						CUDA_ASSERT(toVisitOffset < 64, "BVH stack overflow");
 						currentNodeIndex = node.offset;
 					} else {
 						nodesToVisit[toVisitOffset++] = node.offset;
+						CUDA_ASSERT(toVisitOffset < 64, "BVH stack overflow");
 						currentNodeIndex = currentNodeIndex + 1;
 					}
 				}

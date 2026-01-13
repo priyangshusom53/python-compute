@@ -14,9 +14,9 @@
 namespace py = pybind11;
 
 
-inline std::array<double, 3> vecmin(const double* vec1, const double* vec2) {
+inline std::array<float, 3> vecmin(const float* vec1, const float* vec2) {
     
-    std::array<double, 3> result;
+    std::array<float, 3> result;
     result[0] = std::min(vec1[0], vec2[0]);
     result[1] = std::min(vec1[1], vec2[1]);
     result[2] = std::min(vec1[2], vec2[2]);
@@ -24,9 +24,9 @@ inline std::array<double, 3> vecmin(const double* vec1, const double* vec2) {
     return result;
 }
 
-inline std::array<double, 3> vecmax(const double* vec1, const double* vec2) {
+inline std::array<float, 3> vecmax(const float* vec1, const float* vec2) {
 
-    std::array<double, 3> result;
+    std::array<float, 3> result;
     result[0] = std::max(vec1[0], vec2[0]);
     result[1] = std::max(vec1[1], vec2[1]);
     result[2] = std::max(vec1[2], vec2[2]);
@@ -35,24 +35,84 @@ inline std::array<double, 3> vecmax(const double* vec1, const double* vec2) {
 }
 
 // AABB and it's methods
+
 struct AABB {
-    double min[3];
-    double max[3];
+    float min[3];
+    float max[3];
+
+    AABB Empty() {
+
+        AABB b;
+        b.min[0] = b.min[1] = b.min[2] =
+            std::numeric_limits<float>::infinity();
+        b.max[0] = b.max[1] = b.max[2] =
+            -std::numeric_limits<float>::infinity();
+
+        return b;
+    }
+
+    std::array<float, 3>Diagonal() const {
+        std::array<float, 3> result;
+        result[0] = max[0] - min[0];
+        result[1] = max[1] - min[1];
+        result[2] = max[2] - min[2];
+
+        return result;
+    }
+
+    int MaxExtent() const {
+
+        float x = max[0] - min[0];
+        float y = max[1] - min[1];
+        float z = max[2] - min[2];
+
+        if (x > y && x > z)
+            return 0;
+        else if (y > z)
+            return 1;
+        else
+            return 2;
+    }
+
+    std::array<float, 3> Offset(const float *point) const {
+
+        const float* pMin = min;
+        const float* pMax = max;
+
+        std::array<float, 3> o;
+        o[0] = point[0] - pMin[0];
+        o[1] = point[1] - pMin[1];
+        o[2] = point[2] - pMin[2];
+
+        if (pMax[0] > pMin[0]) o[0] /= pMax[0] - pMin[0];
+        if (pMax[1] > pMin[1]) o[1] /= pMax[1] - pMin[1];
+        if (pMax[2] > pMin[2]) o[2] /= pMax[2] - pMin[2];
+
+        return o;
+    }
+
+    float SurfaceArea() const {
+
+        auto diag = Diagonal();
+        return 2 *
+            (diag[0] * diag[1] +
+                diag[0] * diag[2] + diag[1] * diag[2]);
+    }
 };
 
 AABB Empty() {
 
     AABB b;
     b.min[0] = b.min[1] = b.min[2] = 
-        std::numeric_limits<double>::infinity();
+        std::numeric_limits<float>::infinity();
     b.max[0] = b.max[1] = b.max[2] = 
-        -std::numeric_limits<double>::infinity();
+        -std::numeric_limits<float>::infinity();
 
     return b;
 }
 
-std::array<double, 3>Diagonal(const AABB& bounds) {
-    std::array<double, 3> result;
+std::array<float, 3>Diagonal(const AABB& bounds) {
+    std::array<float, 3> result;
     result[0] = bounds.max[0] - bounds.min[0];
     result[1] = bounds.max[1] - bounds.min[1];
     result[2] = bounds.max[2] - bounds.min[2];
@@ -62,9 +122,9 @@ std::array<double, 3>Diagonal(const AABB& bounds) {
 
 int MaxExtent(const AABB& bounds) {
 
-    double x = bounds.max[0] - bounds.min[0];
-    double y = bounds.max[1] - bounds.min[1];
-    double z = bounds.max[2] - bounds.min[2];
+    float x = bounds.max[0] - bounds.min[0];
+    float y = bounds.max[1] - bounds.min[1];
+    float z = bounds.max[2] - bounds.min[2];
 
     if (x > y && x > z)
         return 0;
@@ -74,13 +134,13 @@ int MaxExtent(const AABB& bounds) {
         return 2;
 }
 
-std::array<double, 3> Offset(const AABB& bounds, 
-    const double* point) {
+std::array<float, 3> Offset(const AABB& bounds, 
+    const float* point) {
 
-    const double *pMin = bounds.min;
-    const double *pMax = bounds.max;
+    const float *pMin = bounds.min;
+    const float *pMax = bounds.max;
 
-    std::array<double, 3> o;
+    std::array<float, 3> o;
     o[0] = point[0] - pMin[0];
     o[1] = point[1] - pMin[1];
     o[2] = point[2] - pMin[2];
@@ -92,7 +152,7 @@ std::array<double, 3> Offset(const AABB& bounds,
     return o;
 }
 
-double SurfaceArea(const AABB& bounds) {
+float SurfaceArea(const AABB& bounds) {
 
     auto diag = Diagonal(bounds);
     return 2 * 
@@ -100,7 +160,7 @@ double SurfaceArea(const AABB& bounds) {
             diag[0] * diag[2] + diag[1] * diag[2]);
 }
 
-AABB Union(const AABB& bounds, const double* point) {
+AABB Union(const AABB& bounds, const float* point) {
     
     AABB result;
     auto _min = vecmin(bounds.min, point);
@@ -138,7 +198,7 @@ AABB Union(const AABB& bounds1, const AABB& bounds2) {
 struct BVHTriangleInfo {
     size_t triNumber; // triangle number is index to indices array
     AABB bounds;
-    double centroid[3];
+    float centroid[3];
 };
 
 struct BVHBuildNode {
@@ -168,14 +228,14 @@ struct BVHBuildNode {
 };
 
 struct LinearBVHNode {
-    AABB bounds;    // 48 bytes
+    AABB bounds;    // 24 bytes
     int32_t offset; // triangleOffset or secondChildOffset
     uint16_t nTris; // 0 for interior nodes 
     uint8_t axis;
     uint8_t pad;        
 };
 
-static_assert(sizeof(LinearBVHNode) == 56, "Must be 56 bytes");
+static_assert(sizeof(LinearBVHNode) == 32, "Must be 56 bytes");
 static_assert(std::is_standard_layout_v<LinearBVHNode>);
 static_assert(std::is_trivially_copyable_v<LinearBVHNode>);
 
@@ -277,7 +337,7 @@ BVHBuildNode* recursive_build(
         }
 
         // Compute costs for splitting after each bucket
-        double cost[nBuckets - 1] = { 0 };
+        float cost[nBuckets - 1] = { 0 };
         for (int i = 0; i < nBuckets - 1; ++i) {
             AABB b0 = Empty(), b1 = Empty();
             int count0 = 0, count1 = 0;
@@ -290,7 +350,7 @@ BVHBuildNode* recursive_build(
                 count1 += buckets[j].count;
             }
 
-            double parentArea = SurfaceArea(nodeBounds);
+            float parentArea = SurfaceArea(nodeBounds);
             if (parentArea <= 0) parentArea = 1;
             // calculate SAH
             cost[i] = .125 + (count0 * SurfaceArea(b0) +
@@ -298,7 +358,7 @@ BVHBuildNode* recursive_build(
         }
 
         // Find bucket to split at that minimizes SAH metric
-        double minCost = cost[0];
+        float minCost = cost[0];
         int minCostSplitBucket = 0;
         for (int i = 1; i < nBuckets - 1; ++i) {
             if (cost[i] < minCost) {
@@ -308,7 +368,7 @@ BVHBuildNode* recursive_build(
         }
 
         // Either create leaf or split primitives at selected SAH bucket
-        double leafCost = nTriangles;
+        float leafCost = nTriangles;
         if (nTriangles > maxTrisInNode || minCost < leafCost) {
             BVHTriangleInfo* pmid = std::partition(&bvhTriangleInfos[start],
                 &bvhTriangleInfos[end - 1] + 1,
@@ -362,7 +422,7 @@ struct BVH {
     std::vector<int32_t> orderedTriangles;
 
 
-    auto build(c_numpy_arr<double> world_aabbs, int32_t maxTrisinNode) {
+    auto build(c_numpy_arr<float> world_aabbs, int32_t maxTrisinNode) {
 
         auto buf = world_aabbs.request();
 
@@ -372,19 +432,19 @@ struct BVH {
         if (buf.ndim != 3 || buf.shape[1] != 2 || buf.shape[2] != 3)
             throw std::runtime_error("Expected shape (N, 2, 3)");
 
-        if (buf.itemsize != sizeof(double))
+        if (buf.itemsize != sizeof(float))
             throw std::runtime_error("Expected float64");
 
-        if (!(buf.strides[2] == sizeof(double) &&
-            buf.strides[1] == 3 * sizeof(double)))
+        if (!(buf.strides[2] == sizeof(float) &&
+            buf.strides[1] == 3 * sizeof(float)))
             throw std::runtime_error("Array must be C-contiguous");
 
         const py::ssize_t triCount = buf.shape[0];
 
-        static_assert(sizeof(AABB) == 6 * sizeof(double),
+        static_assert(sizeof(AABB) == 6 * sizeof(float),
             "AABB layout mismatch");
 
-        static_assert(alignof(AABB) == alignof(double),
+        static_assert(alignof(AABB) == alignof(float),
             "Unexpected AABB alignment");
 
         const AABB* aabbs = reinterpret_cast<const AABB*>(buf.ptr);

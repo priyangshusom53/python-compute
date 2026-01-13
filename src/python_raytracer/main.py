@@ -10,6 +10,7 @@ from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
 from python_raytracer.plots.o3dplots import plot_mesh_data
 from python_raytracer.bvh import bvh
 
+# -debug or --debug flag to enable debugging
 def main(debug:bool):
 
    # setup log
@@ -65,11 +66,11 @@ def main(debug:bool):
 
 
    # store contagious arrays
-   all_obj_vertices_cont = np.ascontiguousarray(all_vertices,dtype=np.float64)
-   all_normals_cont:np.ndarray = np.ascontiguousarray(all_normals, dtype=np.float64)
-   all_uvs_cont:np.ndarray = np.ascontiguousarray(all_uvs, dtype=np.float64)
+   all_obj_vertices_cont = np.ascontiguousarray(all_vertices,dtype=np.float32)
+   all_normals_cont:np.ndarray = np.ascontiguousarray(all_normals, dtype=np.float32)
+   all_uvs_cont:np.ndarray = np.ascontiguousarray(all_uvs, dtype=np.float32)
    all_indices_cont:np.ndarray = np.ascontiguousarray(all_indices, dtype=np.int32)
-   all_world_bounds_cont:np.ndarray = np.ascontiguousarray(all_world_bounds, dtype=np.float64)
+   all_world_bounds_cont:np.ndarray = np.ascontiguousarray(all_world_bounds, dtype=np.float32)
    transforms:list[np.ndarray] = transforms
 
    world_vertices_list = [mesh.positions.array @ mesh.transform.matrix.T for mesh in meshes]
