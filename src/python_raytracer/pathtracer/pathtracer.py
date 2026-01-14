@@ -17,8 +17,13 @@ class PathTracer(Renderer):
       for mesh in meshes[1:]:
          all_world_bounds = np.concatenate([all_world_bounds, mesh.world_bounds], axis=0)
       all_world_bounds_cont:np.ndarray = np.ascontiguousarray(all_world_bounds, dtype=np.float32)
+      bvh_nodes, ordered_triangles = bvh.calculate_bvh(all_world_bounds_cont,4)
+      return (bvh_nodes,ordered_triangles)
 
+   def _generate_rays_cam_space(camera:simplecamera.PerspectiveCamera):
+      pass
 
+   # buffer numpy arrays should be C_CONTIGUOUS and contagious array
    def render(self,
               debug:bool,
               index_buff:np.ndarray,
@@ -41,6 +46,10 @@ class PathTracer(Renderer):
       d_vertex_buff = cp.asarray(vertex_buff)
       d_normal_buff = cp.asarray(normal_buff)
       d_uv_buff = cp.asarray(uv_buff)
+      # calculate bvh and ordered triangles
+      bvh_nodes, ordered_triangles = self._make_bvh_from_meshes(meshes)
+      if debug:
+         assert ordered_triangles.dtype == np.int32
 
       # make place holder materials
       num_materials = 10
@@ -54,6 +63,10 @@ class PathTracer(Renderer):
       materials = np.zeros(num_materials,dtype=material_dtype)
       for i in range(0,10):
          materials[i]["baseColorFactor"] = [random.random(),random.random(),random.random(),1]
+
+      # get camera rays
+
+      # set output image
 
 
    def render_screen_extent(self,scene,extent):
