@@ -10,21 +10,23 @@ struct __align__(16) TriangleMesh
    int numVertices;
    int firstVertexIdx;
    int materialIdx;
+   int pad[3];
    Transform transform;
 };
 
-struct __align__(16) Triangle
+// aligned to largest member in struct 4 bytes
+struct __align__(4) Triangle
 {
    int meshIdx;
    int triangleIdx;
 };
 
-struct __align__(16) AttributeBuffers
+struct AttributeBuffers
 {
-   const int3 *indexBuffer;    // 4 bytes
-   const float4 *vertexBuffer; // 4 bytes
-   const float4 *normalBuffer; // 4 bytes
-   const float2 *uvBuffer;     // 4 bytes
+   const int3 *indexBuffer;    // 8 bytes on 64bit bin
+   const float4 *vertexBuffer; // 8 bytes
+   const float4 *normalBuffer; // 8 bytes
+   const float2 *uvBuffer;     // 8 bytes
 };
 
 #endif

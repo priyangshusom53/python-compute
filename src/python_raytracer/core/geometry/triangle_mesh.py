@@ -10,7 +10,7 @@ class TriangleMesh:
         transform:np.ndarray,
         n_triangles: int,
         vertex_indices: np.ndarray, # shape (n_triangles, 3) np.uint32 type
-        n_vertices: int, # n_vertices = 3 * n_triangles
+        n_vertices: int, # n_vertices = len(positions)
         positions: np.ndarray,
         bounds: np.ndarray = None, # shape(n_triangles, 2, 3)
         world_bounds: np.ndarray = None,

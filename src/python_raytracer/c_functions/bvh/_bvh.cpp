@@ -235,7 +235,7 @@ struct LinearBVHNode {
     uint8_t pad;        
 };
 
-static_assert(sizeof(LinearBVHNode) == 32, "Must be 56 bytes");
+static_assert(sizeof(LinearBVHNode) == 32, "Must be 32 bytes");
 static_assert(std::is_standard_layout_v<LinearBVHNode>);
 static_assert(std::is_trivially_copyable_v<LinearBVHNode>);
 

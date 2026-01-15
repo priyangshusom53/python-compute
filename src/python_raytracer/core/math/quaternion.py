@@ -75,6 +75,13 @@ class Quaternion:
       ], dtype=np.float32)
    
    @staticmethod
+   def angle_axis(angle:float,axis:np.ndarray):
+      w = np.cos(np.radians(angle/2))
+      sin = np.sin(np.radians(angle/2))
+      x,y,z = axis[0]*sin,axis[1]*sin,axis[2]*sin
+      return Quaternion(w,x,y,z)
+   
+   @staticmethod
    def slerp(q1:'Quaternion', q2:'Quaternion', t:float) -> 'Quaternion':
       """Spherical linear interpolation between two quaternions."""
       dot_product = Quaternion.dot(q1, q2)

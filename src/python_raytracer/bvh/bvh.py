@@ -11,8 +11,8 @@ def calculate_bvh(world_aabbs, max_tris_in_node=1):
 
 
    LinearBVHNode_dtype = np.dtype([
-    ("bounds_min", np.float64, (3,)),
-    ("bounds_max", np.float64, (3,)),
+    ("bounds_min", np.float32, (3,)),
+    ("bounds_max", np.float32, (3,)),
     ("offset",     np.int32),
     ("nTris",      np.uint16),
     ("axis",       np.uint8),
@@ -20,7 +20,7 @@ def calculate_bvh(world_aabbs, max_tris_in_node=1):
    ], align=True)
 
    nodes = nodes_raw.view(LinearBVHNode_dtype)
-   assert nodes.dtype.itemsize == 56
+   assert nodes.dtype.itemsize == 32
 
    return(nodes, ordered_tris)
 
