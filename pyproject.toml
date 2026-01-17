@@ -20,6 +20,7 @@ dependencies = [
     "trimesh",
     "Pillow",
     "cupy",
+    "vtk",
 ]
 
 [tool.scikit-build]

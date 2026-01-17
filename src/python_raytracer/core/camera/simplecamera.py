@@ -127,6 +127,6 @@ class PerspectiveCamera(ProjectiveCamera):
       # <Convert to world space>
       ray_os = ray_os @ self.camera_to_world.matrix.T
       ray_ds = ray_ds @ self.camera_to_world.matrix.T
-      rays = np.concatenate((ray_os,ray_ds),axis=2)
-      return rays
+      rays = np.concatenate((ray_os,ray_ds),axis=2,dtype=np.float32)
+      return rays # shape=(H,W,8)
    

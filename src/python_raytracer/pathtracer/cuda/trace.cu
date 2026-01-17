@@ -34,6 +34,9 @@ extern "C" __global__ void trace_scene(
    const PBRMaterial *materials,
    const int numMaterials,
    float4 *output){
+      static_assert(sizeof(TriangleMesh) == 160, "TriangleMesh ABI mismatch");
+      static_assert(alignof(TriangleMesh) == 16,  "TriangleMesh alignment mismatch");
+
 
       int x = blockIdx.x * blockDim.x + threadIdx.x;
       int y = blockIdx.y * blockDim.y + threadIdx.y;
