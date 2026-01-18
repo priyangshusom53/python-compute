@@ -68,8 +68,6 @@ class TriangleMesh:
         if material_idx is not None:
             self.material_idx = material_idx
 
-        print("TriangleMesh initialized with provided data.")
-
     def set_positions(self, positions:np.ndarray):
         if (positions.shape[1] == 3):
 

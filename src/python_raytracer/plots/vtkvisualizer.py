@@ -1,3 +1,4 @@
+from typing import Callable
 
 import numpy as np
 import vtk
@@ -78,3 +79,10 @@ class Visualizer:
             world_to_cam[i,j] = vtk_view_mat.GetElement(i,j)
       cam_to_world = np.linalg.inv(world_to_cam)
       return Transform(rh_to_lh.matrix @ cam_to_world)
+   
+   def add_key_callback(self,key:str,callback:Callable):
+      def on_key_press(obj,event):
+         _key = obj.GetKeySym()
+         if _key == key:
+            callback()
+      self.vtk_interactor.AddObserver("KeyPressEvent", on_key_press)

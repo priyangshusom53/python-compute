@@ -11,6 +11,7 @@ from python_raytracer.core.camera.simplecamera import PerspectiveCamera
 from python_raytracer.pathtracer.pathtracer import PathTracer
 from python_raytracer.plots.o3dplots import plot_mesh_data
 from python_raytracer.bvh import bvh
+from python_raytracer.plots.vtkvisualizer import Visualizer
 
 # -debug or --debug flag to enable debugging
 def main(debug:bool):
@@ -103,10 +104,11 @@ def main(debug:bool):
    #                all_uvs, 
    #                bvh_bounds)
 
-   # camera transform
-   cam_t = PerspectiveCamera.place_cam(np.array([-30.605,-0.400465,27.9332]),np.array([0.468241,-0.488979,-0.735969]),110)
    tracer = PathTracer(meshes)
-   tracer.render(debug,cam_t)
+   vs = Visualizer(meshes)
+   cb = lambda:tracer.render(debug,cam_transform=vs.get_camera_transform())
+   vs.add_key_callback('r',cb)
+   vs.start()
 
 
 if __name__ == "__main__":

@@ -27,8 +27,8 @@ extern "C" __global__ void trace_scene(
    const float4 *normalBuffer, 
    const float2 *uvBuffer, 
    const int numVertices, 
-   const TriangleMesh *meshes, 
-   const Triangle *triangles, // triangles are ordered to math bvh layout
+   const unsigned char *meshesBytes, // TriangleMesh type
+   const Triangle *triangles,  // triangles are ordered to math bvh layout
    const int numTriangles,
    const LinearBVHNode *bvhNodes,
    const PBRMaterial *materials,
@@ -37,6 +37,7 @@ extern "C" __global__ void trace_scene(
       static_assert(sizeof(TriangleMesh) == 160, "TriangleMesh ABI mismatch");
       static_assert(alignof(TriangleMesh) == 16,  "TriangleMesh alignment mismatch");
 
+      const TriangleMesh *meshes = reinterpret_cast<const TriangleMesh*>(meshesBytes);
 
       int x = blockIdx.x * blockDim.x + threadIdx.x;
       int y = blockIdx.y * blockDim.y + threadIdx.y;

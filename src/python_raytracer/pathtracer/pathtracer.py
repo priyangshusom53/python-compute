@@ -22,8 +22,17 @@ class PathTracer(Renderer):
                 'vert_buff',
                 'norm_buff',
                 'uv_buff',
-                'gpu_meshes',
-                'bvh_nodes',]
+                'np_gpu_meshes',
+                'bvh_nodes',
+
+                'd_index_buff',
+                'd_vert_buff',
+                'd_norm_buff',
+                'd_uv_buff',
+                'd_triangles',
+                'd_meshes',
+                'd_bvh_nodes',
+                'd_materials']
 
    def _create_attribute_buffers(self,meshes:list[TriangleMesh]):
       index_buff = np.concatenate([mesh.vertex_indices for mesh in meshes],axis=0,dtype=np.int32)
@@ -77,9 +86,9 @@ class PathTracer(Renderer):
    
    def _compute_gpu_triangles_from_ordered_triangles(self,ordered_tris:np.ndarray):
       
-      num_meshes = len(self.gpu_meshes)
+      num_meshes = len(self.np_gpu_meshes)
       triangle_blocks = []
-      for mesh_idx,mesh in enumerate(self.gpu_meshes):
+      for mesh_idx,mesh in enumerate(self.np_gpu_meshes):
          start = mesh['firstTriangleIdx']
          end = start + mesh['numTriangles'] # exclusive [start,end)
          triangles_of_mesh = ordered_tris[(ordered_tris >= start) & (ordered_tris < end)]
@@ -101,28 +110,28 @@ class PathTracer(Renderer):
       if debug:
          logger.info(f"{__name__} running in debug mode")
 
-      # <Make cupy arrays>
-      d_index_buff = cp.asarray(self.index_buff)
-      d_vertex_buff = cp.asarray(self.vert_buff)
-      d_normal_buff = cp.asarray(self.norm_buff)
-      d_uv_buff = cp.asarray(self.uv_buff)
-      d_triangles = cp.asarray(self.triangles)
-      d_meshes = cp.asarray(self.gpu_meshes)
-      d_bvh_nodes = cp.asarray(self.bvh_nodes)
+      # # <Make cupy arrays>
+      # d_index_buff = cp.asarray(self.index_buff)
+      # d_vertex_buff = cp.asarray(self.vert_buff)
+      # d_normal_buff = cp.asarray(self.norm_buff)
+      # d_uv_buff = cp.asarray(self.uv_buff)
+      # d_triangles = cp.asarray(self.triangles)
+      # d_meshes = cp.asarray(self.np_gpu_meshes)
+      # d_bvh_nodes = cp.asarray(self.bvh_nodes)
 
       # make place holder materials
-      num_materials = 10
-      material_dtype = np.dtype([
-         ("baseColorFactor", np.float32,4),
-         ("metallic", np.float32),
-         ("roughness", np.float32),
-         ("_pad", np.float32, 2),
-      ])
-      assert material_dtype.itemsize == 32
-      materials = np.zeros(num_materials,dtype=material_dtype)
-      for i in range(0,10):
-         materials[i]["baseColorFactor"] = [random.random(),random.random(),random.random(),1]
-      d_materials = cp.asarray(np.ascontiguousarray(materials))
+      # num_materials = 10
+      # material_dtype = np.dtype([
+      #    ("baseColorFactor", np.float32,4),
+      #    ("metallic", np.float32),
+      #    ("roughness", np.float32),
+      #    ("_pad", np.float32, 2),
+      # ])
+      # assert material_dtype.itemsize == 32
+      # materials = np.zeros(num_materials,dtype=material_dtype)
+      # for i in range(0,10):
+      #    materials[i]["baseColorFactor"] = [random.random(),random.random(),random.random(),1]
+      # d_materials = cp.asarray(np.ascontiguousarray(materials))
 
       # get camera rays
       cam = PerspectiveCamera(cam_transform,120,film=Film(1920,1080))
@@ -163,17 +172,17 @@ class PathTracer(Renderer):
             d_rays,                     # Ray*
             np.int32(W),
             np.int32(H),
-            d_index_buff,               # int3*
-            d_vertex_buff,              # float4*
-            d_normal_buff,              # float4*
-            d_uv_buff,                  # float2*
+            self.d_index_buff,          # int3*
+            self.d_vert_buff,           # float4*
+            self.d_norm_buff,           # float4*
+            self.d_uv_buff,             # float2*
             np.int32(self.n_verts),
-            d_meshes,                   # TriangleMesh*
-            d_triangles,                # Triangle*
+            self.d_meshes,              # TriangleMesh*
+            self.d_triangles,           # Triangle*
             np.int32(self.n_tris),
-            d_bvh_nodes,                # LinearBVHNode*
-            d_materials,                # PBRMaterial*
-            np.int32(num_materials),
+            self.d_bvh_nodes,           # LinearBVHNode*
+            self.d_materials,           # PBRMaterial*
+            np.int32(10),               # numMaterials
             d_output                    # float4*
          )
       )
@@ -220,7 +229,7 @@ class PathTracer(Renderer):
       mesh_buffer["materialIdx"]      = matidx_arr
       mesh_buffer["pad"]              = pad_arr
       mesh_buffer["transform"]        = t_arr
-      self.gpu_meshes = mesh_buffer
+      self.np_gpu_meshes = mesh_buffer
       assert mesh_buffer.flags["C_CONTIGUOUS"]
       assert mesh_buffer.dtype.itemsize == 160
 
@@ -231,6 +240,29 @@ class PathTracer(Renderer):
 
       # <Make Triangle array from ordered triangles>
       self.triangles = np.ascontiguousarray(self._compute_gpu_triangles_from_ordered_triangles(ordered_triangles))
+
+      # <Make cupy arrays>
+      self.d_index_buff = cp.asarray(self.index_buff)
+      self.d_vert_buff = cp.asarray(self.vert_buff)
+      self.d_norm_buff = cp.asarray(self.norm_buff)
+      self.d_uv_buff = cp.asarray(self.uv_buff)
+      self.d_triangles = cp.asarray(self.triangles)
+      self.d_meshes = cp.asarray(self.np_gpu_meshes.view(np.uint8))
+      self.d_bvh_nodes = cp.asarray(self.bvh_nodes)
+
+      # make place holder materials
+      num_materials = 10
+      material_dtype = np.dtype([
+         ("baseColorFactor", np.float32,4),
+         ("metallic", np.float32),
+         ("roughness", np.float32),
+         ("_pad", np.float32, 2),
+      ])
+      assert material_dtype.itemsize == 32
+      materials = np.zeros(num_materials,dtype=material_dtype)
+      for i in range(0,10):
+         materials[i]["baseColorFactor"] = [random.random(),random.random(),random.random(),1]
+      self.d_materials = cp.asarray(np.ascontiguousarray(materials))
 
    def render_screen_extent(self,scene,extent):
       raise NotImplementedError
