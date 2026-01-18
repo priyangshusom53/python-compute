@@ -1,46 +1,90 @@
+import numpy as np
 import vtk
+from vtkmodules.util import numpy_support
 
-def minimal_vtk_scene():
-   # 1. Create a cube (data)
-   cube = vtk.vtkCubeSource()
-   cube.SetXLength(1)
-   cube.SetYLength(1)
-   cube.SetZLength(1)
-   cube.Update()
+from python_raytracer.loader.gltf_loader import GLTFLoader
+from python_raytracer.core.geometry.transformation import Transform
 
-   # 2. Mapper (data → GPU)
-   mapper = vtk.vtkPolyDataMapper()
-   mapper.SetInputConnection(cube.GetOutputPort())
+lh_to_rh_t = Transform.scale(1,1,-1)
 
-   # 3. Actor (transform + appearance)
-   actor = vtk.vtkActor()
-   actor.SetMapper(mapper)
+def visualize():
+    loader = GLTFLoader()
+    meshes, materials = loader.load(r"D:\3D Models\sponza_gltf\scene.gltf")
 
-   # 4. Renderer
-   renderer = vtk.vtkRenderer()
-   renderer.AddActor(actor)
-   renderer.SetBackground(0.1, 0.1, 0.2)
+    all_wrld_verts = []
+    all_indices = []
 
-   # 5. Render window
-   window = vtk.vtkRenderWindow()
-   window.AddRenderer(renderer)
-   window.SetSize(1920, 1080)
+    vertex_offset = 0
 
-   # 6. Interactor (mouse controls)
-   interactor = vtk.vtkRenderWindowInteractor()
-   interactor.SetRenderWindow(window)
+    for mesh in meshes:
+        # --- world-space vertices ---
+        verts_w = (mesh.positions.array @ mesh.transform.matrix.T)[:, :3]
+        all_wrld_verts.append(verts_w)
 
-   # IMPORTANT: interaction style
-   style = vtk.vtkInteractorStyleTrackballCamera()
-   interactor.SetInteractorStyle(style)
+        # --- offset indices ---
+        all_indices.append(mesh.vertex_indices + vertex_offset)
 
-   # 7. Reset camera so cube is visible
-   renderer.ResetCamera()
+        vertex_offset += verts_w.shape[0]
 
-   # 8. Start
-   window.Render()
-   interactor.Initialize()
-   interactor.Start()
+    all_wrld_verts = np.concatenate(all_wrld_verts, axis=0)
+    indices = np.concatenate(all_indices, axis=0)
 
+    # --- VTK points ---
+    vtk_points_data = numpy_support.numpy_to_vtk(
+        all_wrld_verts.astype(np.float32),
+        deep=True,
+        array_type=vtk.VTK_FLOAT
+    )
+    positions = vtk.vtkPoints()
+    positions.SetData(vtk_points_data)
+
+    # --- VTK triangles ---
+    num_tris = indices.shape[0]
+    vtk_cells = np.hstack([
+        np.full((num_tris, 1), 3, dtype=np.int64),
+        indices.astype(np.int64)
+    ]).ravel()
+
+    vtk_tri_cells = numpy_support.numpy_to_vtkIdTypeArray(
+        vtk_cells,
+        deep=True,
+    )
+
+    triangles = vtk.vtkCellArray()
+    triangles.SetCells(num_tris, vtk_tri_cells)
+
+    # --- PolyData ---
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(positions)
+    polydata.SetPolys(triangles)
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(polydata)
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    renderer = vtk.vtkRenderer()
+    renderer.AddActor(actor)
+    renderer.SetBackground(0.1, 0.2, 0.4)
+
+    render_window = vtk.vtkRenderWindow()
+    render_window.SetSize(800, 600)
+    render_window.AddRenderer(renderer)
+
+    interactor = vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(render_window)
+    interactor.SetInteractorStyle(vtk.vtkInteractorStyleTrackballCamera())
+
+    renderer.ResetCamera()
+
+    render_window.Render()
+    interactor.Initialize()
+    interactor.Start()
+
+from python_raytracer.plots.vtkvisualizer import Visualizer
 if __name__ == "__main__":
-    minimal_vtk_scene()
+    loader = GLTFLoader()
+    meshes, materials = loader.load(r"D:\3D Models\sponza_gltf\scene.gltf")
+    vs = Visualizer(meshes)
+    print(vs.get_camera_transform().matrix)

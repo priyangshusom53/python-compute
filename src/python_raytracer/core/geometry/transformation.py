@@ -1,6 +1,7 @@
 
 
 import numpy as np
+from numpy import typename
 
 class Transform:
 
@@ -26,11 +27,11 @@ class Transform:
       self._inverse_matrix = np.identity(4, dtype=np.float32)
 
    @property
-   def matrix(self) -> np.ndarray:
+   def matrix(self):
       return self._matrix
    
    @property
-   def inverse_matrix(self) -> np.ndarray:
+   def inverse_matrix(self):
       return self._inverse_matrix
 
    @staticmethod
