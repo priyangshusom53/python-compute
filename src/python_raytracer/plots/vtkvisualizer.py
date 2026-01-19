@@ -78,7 +78,7 @@ class Visualizer:
          for j in range(4):
             world_to_cam[i,j] = vtk_view_mat.GetElement(i,j)
       cam_to_world = np.linalg.inv(world_to_cam)
-      return Transform(rh_to_lh.matrix @ cam_to_world)
+      return Transform(rh_to_lh.matrix @ (cam_to_world @ rh_to_lh.matrix))
    
    def add_key_callback(self,key:str,callback:Callable):
       def on_key_press(obj,event):

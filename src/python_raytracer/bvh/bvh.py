@@ -18,7 +18,7 @@ def calculate_bvh(world_aabbs, max_tris_in_node=1):
     ("axis",       np.uint8),
     ("pad",        np.uint8),
    ], align=True)
-
+   
    nodes = nodes_raw.view(LinearBVHNode_dtype)
    assert nodes.dtype.itemsize == 32
 

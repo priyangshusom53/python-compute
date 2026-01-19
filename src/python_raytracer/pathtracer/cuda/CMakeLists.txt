@@ -15,6 +15,13 @@ add_library(pathtracer_ptx OBJECT
 
 target_include_directories(pathtracer_ptx PRIVATE include)
 
+set(CUDA_FLAGS_DEBUG "-O0;-G;-lineinfo")
+foreach(debug_flag IN ITEMS ${CUDA_FLAGS_DEBUG})
+    target_compile_options(pathtracer_ptx PRIVATE 
+        $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:Debug>>:${debug_flag}>
+    )
+endforeach()
+
 target_compile_definitions(pathtracer_ptx PRIVATE "$<$<CONFIG:DEBUG>:DEBUG>")
 
 set_target_properties(pathtracer_ptx PROPERTIES

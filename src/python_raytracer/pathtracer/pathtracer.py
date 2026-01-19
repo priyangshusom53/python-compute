@@ -35,18 +35,38 @@ class PathTracer(Renderer):
                 'd_materials']
 
    def _create_attribute_buffers(self,meshes:list[TriangleMesh]):
-      index_buff = np.concatenate([mesh.vertex_indices for mesh in meshes],axis=0,dtype=np.int32)
-      n_tris = index_buff.shape[0]
-      vertex_buff = np.concatenate([mesh.positions.array @ mesh.transform.matrix.T for mesh in meshes],axis=0,dtype=np.float32)
-      n_verts = vertex_buff.shape[0]
-      normal_buff = np.concatenate([mesh.normals.array for mesh in meshes],axis=0,dtype=np.float32)
-      uv_buff = np.concatenate([mesh.uv.array for mesh in meshes],axis=0,dtype=np.float32)
-      return (n_tris,
-              n_verts,
-              index_buff,
-              vertex_buff,
-              normal_buff,
-              uv_buff)
+      index_blocks = []
+      vertex_blocks = []
+      normal_blocks = []
+      uv_blocks = []
+
+      vertex_offset = 0
+
+      for mesh in meshes:
+         # COPY indices before modifying
+         idx = mesh.vertex_indices.astype(np.int32).copy()
+         idx += vertex_offset
+         index_blocks.append(idx)
+
+         vertex_blocks.append(mesh.positions.array @ mesh.transform.matrix.T)
+         normal_blocks.append(mesh.normals.array)
+         uv_blocks.append(mesh.uv.array)
+
+         vertex_offset += mesh.n_vertices
+
+      index_buff  = np.concatenate(index_blocks, axis=0)
+      vertex_buff = np.concatenate(vertex_blocks, axis=0).astype(np.float32)
+      normal_buff = np.concatenate(normal_blocks, axis=0).astype(np.float32)
+      uv_buff     = np.concatenate(uv_blocks, axis=0).astype(np.float32)
+
+      return (
+         index_buff.shape[0],
+         vertex_buff.shape[0],
+         index_buff,
+         vertex_buff,
+         normal_buff,
+         uv_buff,
+      )
 
    def _create_gpu_trimesh_buffer(self,meshes:list[TriangleMesh]):
       num_meshes = len(meshes)
@@ -82,7 +102,32 @@ class PathTracer(Renderer):
       
       all_world_bounds_cont:np.ndarray = np.ascontiguousarray(all_world_bounds, dtype=np.float32)
       bvh_nodes, ordered_triangles = bvh.calculate_bvh(all_world_bounds_cont,4)
-      return (bvh_nodes,ordered_triangles)
+
+      num_nodes = bvh_nodes.shape[0]
+      cuda_bvh_dtype = np.dtype([
+         ("pMin", np.float32, (4,)),
+         ("pMax", np.float32, (4,)),
+         ("offset", np.int32),
+         ("nTris", np.uint16),
+         ("axis", np.uint8),
+         ("pad", np.uint8,(9,)),
+      ], align=True)
+      assert cuda_bvh_dtype.itemsize == 48
+      new_bvh = np.zeros(num_nodes, dtype=cuda_bvh_dtype)
+
+      # bounds
+      new_bvh["pMin"][:, :3] = bvh_nodes["bounds_min"][:, 0:3]
+      new_bvh["pMin"][:, 3]  = 0.0
+
+      new_bvh["pMax"][:, :3] = bvh_nodes["bounds_max"][:, 0:3]
+      new_bvh["pMax"][:, 3]  = 0.0
+
+      # rest
+      new_bvh["offset"] = bvh_nodes["offset"]
+      new_bvh["nTris"]  = bvh_nodes["nTris"]
+      new_bvh["axis"]   = bvh_nodes["axis"]
+      del bvh_nodes
+      return (new_bvh,ordered_triangles)
    
    def _compute_gpu_triangles_from_ordered_triangles(self,ordered_tris:np.ndarray):
       
@@ -95,7 +140,7 @@ class PathTracer(Renderer):
       
          triangles_mesh_idx = np.full(shape=(triangles_of_mesh.shape[0],),fill_value=mesh_idx,dtype=np.int32)
 
-         triangles = np.stack((triangles_mesh_idx, triangles_of_mesh),axis=1).astype(np.int32)
+         triangles = np.stack((triangles_mesh_idx, triangles_of_mesh - mesh['firstTriangleIdx']),axis=1).astype(np.int32)
 
          triangle_blocks.append(triangles)
       triangles = np.concatenate(triangle_blocks,axis=0,dtype=np.int32)
@@ -154,7 +199,6 @@ class PathTracer(Renderer):
 
       module = cp.RawModule(
          path=str(kernel_path),
-         options=("--std=c++14",),
       )
       trace_kernel = module.get_function("trace_scene")
       threads = (16, 16, 1)
@@ -165,34 +209,36 @@ class PathTracer(Renderer):
       )
 
       logger.info(f"Invoking kernel: trace_scene")
-      trace_kernel(
-         blocks,
-         threads,
-         (
-            d_rays,                     # Ray*
-            np.int32(W),
-            np.int32(H),
-            self.d_index_buff,          # int3*
-            self.d_vert_buff,           # float4*
-            self.d_norm_buff,           # float4*
-            self.d_uv_buff,             # float2*
-            np.int32(self.n_verts),
-            self.d_meshes,              # TriangleMesh*
-            self.d_triangles,           # Triangle*
-            np.int32(self.n_tris),
-            self.d_bvh_nodes,           # LinearBVHNode*
-            self.d_materials,           # PBRMaterial*
-            np.int32(10),               # numMaterials
-            d_output                    # float4*
+      try:
+         trace_kernel(
+            blocks,
+            threads,
+            (
+               d_rays,                     # Ray*
+               np.int32(W),
+               np.int32(H),
+               self.d_index_buff,          # int3*
+               self.d_vert_buff,           # float4*
+               self.d_norm_buff,           # float4*
+               self.d_uv_buff,             # float2*
+               np.int32(self.n_verts),
+               self.d_meshes,              # TriangleMesh*
+               self.d_triangles,           # Triangle*
+               np.int32(self.n_tris),
+               self.d_bvh_nodes,           # LinearBVHNode*
+               self.d_materials,           # PBRMaterial*
+               np.int32(10),               # numMaterials
+               d_output                    # float4*
+            )
          )
-      )
-      cp.cuda.runtime.deviceSynchronize()
-      err = cp.cuda.runtime.getLastError()
-      assert err == 0
+         cp.cuda.runtime.deviceSynchronize()
+      except cp.cuda.runtime.CUDARuntimeError as e:
+         logger.error(f"CUDA ERROR: {e}")
+         raise
 
       # save result to image
       image = cp.asnumpy(d_output)
-      save_to_image(image, "output.png")
+      save_to_image(image,1920,1080,"RGBA", "output.png",debug)
       logger.info("image saved to output.png")
       
    def __init__(self,meshes:list[TriangleMesh],materials:np.ndarray=None):
@@ -248,7 +294,7 @@ class PathTracer(Renderer):
       self.d_uv_buff = cp.asarray(self.uv_buff)
       self.d_triangles = cp.asarray(self.triangles)
       self.d_meshes = cp.asarray(self.np_gpu_meshes.view(np.uint8))
-      self.d_bvh_nodes = cp.asarray(self.bvh_nodes)
+      self.d_bvh_nodes = cp.asarray(self.bvh_nodes.view(np.uint8))
 
       # make place holder materials
       num_materials = 10
@@ -262,7 +308,7 @@ class PathTracer(Renderer):
       materials = np.zeros(num_materials,dtype=material_dtype)
       for i in range(0,10):
          materials[i]["baseColorFactor"] = [random.random(),random.random(),random.random(),1]
-      self.d_materials = cp.asarray(np.ascontiguousarray(materials))
+      self.d_materials = cp.asarray(np.ascontiguousarray(materials.view(np.uint8)))
 
    def render_screen_extent(self,scene,extent):
       raise NotImplementedError

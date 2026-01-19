@@ -68,7 +68,7 @@ class PerspectiveCamera(ProjectiveCamera):
 
    __slots__ = ['fov']
 
-   def perspective_transform(fov:float, n:float, f:float):
+   def perspective_transform(self,fov:float, n:float, f:float):
       # <Transfom to perspective view volume>
       persp = Transform(
          matrix=np.array([[1, 0, 0,              0],
@@ -102,7 +102,7 @@ class PerspectiveCamera(ProjectiveCamera):
          scr_max_y = aspect
          screen = ScreenWindow([scr_min_x,scr_min_y],[scr_max_x,scr_max_y])
 
-      super().__init__(film,screen,cam_to_world,self.perspective_transform(fov,2,1000))
+      super().__init__(film,screen,cam_to_world,self.perspective_transform(fov,0.001,1000))
 
    def generate_camera_rays(self):
       W = self.film.res_x

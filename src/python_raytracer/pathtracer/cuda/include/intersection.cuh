@@ -11,6 +11,8 @@
 #include "algo.cuh"
 #include "debug.cuh"
 
+#include<stdio.h>
+
 struct __align__(16) SurfaceInteraction
 {
    float4 p;			 // float4 is 16 byte aligned
@@ -74,13 +76,34 @@ __device__ bool intersect_triangle(
    // get vertex data from attribute buffers
    TriangleMesh mesh = meshes[triangle.meshIdx];
    int globalTriIdx = (mesh.firstTriangleIdx+triangle.triangleIdx);
-	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].x < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
-	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].y < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
-	CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].z < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
+	// CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].x < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
+	// CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].y < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
+	// CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].z < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
 
-   float4 p0 = buffers.vertexBuffer[buffers.indexBuffer[globalTriIdx].x];
-   float4 p1 = buffers.vertexBuffer[buffers.indexBuffer[globalTriIdx].y];
-   float4 p2 = buffers.vertexBuffer[buffers.indexBuffer[globalTriIdx].z];
+	int i0 = buffers.indexBuffer[globalTriIdx].x;
+	int i1 = buffers.indexBuffer[globalTriIdx].y;
+	int i2 = buffers.indexBuffer[globalTriIdx].z;
+
+	CUDA_ASSERT(
+		i0 >= mesh.firstVertexIdx &&
+		i0 <  mesh.firstVertexIdx + mesh.numVertices,
+		"indexBuffer.x out of mesh range"
+	);
+	CUDA_ASSERT(
+		i1 >= mesh.firstVertexIdx &&
+		i1 <  mesh.firstVertexIdx + mesh.numVertices,
+		"indexBuffer.y out of mesh range"
+	);
+	CUDA_ASSERT(
+		i2 >= mesh.firstVertexIdx &&
+		i2 <  mesh.firstVertexIdx + mesh.numVertices,
+		"indexBuffer.z out of mesh range"
+	);
+
+	
+   float4 p0 = buffers.vertexBuffer[i0];
+   float4 p1 = buffers.vertexBuffer[i1];
+   float4 p2 = buffers.vertexBuffer[i2];
 
    // translate vertices with ray origin
    float4 p0t = p0 - ray.o;
@@ -121,6 +144,7 @@ __device__ bool intersect_triangle(
 	if (det == 0)
 		return false;
 	// compute scaled hit distance to triangle and test against ray t range
+	printf("Intersection found with triangle");
 	p0t.z *= Sz;
 	p1t.z *= Sz;
 	p2t.z *= Sz;
@@ -193,10 +217,11 @@ __device__ bool intersect_bvh(
 		float3 invDir = make_float3(1/ray.d.x,1/ray.d.y,1/ray.d.z);
 		int dirIsNeg[3] = { invDir.x < 0, invDir.y < 0, invDir.z<0};
 		int toVisitOffset = 0, currentNodeIndex = 0;
-		unsigned short nodesToVisit[64];
+		unsigned short nodesToVisit[512];
 		while (true) {
 			const LinearBVHNode node = bvhNodes[currentNodeIndex];
 			if(intersect_bound(ray,node.b,invDir,dirIsNeg)){
+				// printf("Intersection found with bvh node");
 				if(node.nTris > 0){
 					CUDA_ASSERT(node.nTris < 255, "number of nodes exceed unsigned char limit");
 					for(unsigned char i = 0; i < node.nTris; ++i){

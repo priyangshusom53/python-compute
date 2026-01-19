@@ -27,17 +27,19 @@ extern "C" __global__ void trace_scene(
    const float4 *normalBuffer, 
    const float2 *uvBuffer, 
    const int numVertices, 
-   const unsigned char *meshesBytes, // TriangleMesh type
-   const Triangle *triangles,  // triangles are ordered to math bvh layout
+   const unsigned char *meshes,      // TriangleMesh type
+   const Triangle *triangles,        // triangles are ordered to math bvh layout
    const int numTriangles,
-   const LinearBVHNode *bvhNodes,
-   const PBRMaterial *materials,
+   const unsigned char *bvhNodes,    // LinearBVHNode type
+   const unsigned char *materials,   // PBRMaterial type
    const int numMaterials,
    float4 *output){
       static_assert(sizeof(TriangleMesh) == 160, "TriangleMesh ABI mismatch");
       static_assert(alignof(TriangleMesh) == 16,  "TriangleMesh alignment mismatch");
 
-      const TriangleMesh *meshes = reinterpret_cast<const TriangleMesh*>(meshesBytes);
+      const TriangleMesh *_meshes = reinterpret_cast<const TriangleMesh*>(meshes);
+      const LinearBVHNode *_bvhNodes = reinterpret_cast<const LinearBVHNode*>(bvhNodes);
+      const PBRMaterial * _materials = reinterpret_cast<const PBRMaterial*>(materials);
 
       int x = blockIdx.x * blockDim.x + threadIdx.x;
       int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -50,14 +52,17 @@ extern "C" __global__ void trace_scene(
          uvBuffer
       };
       SurfaceInteraction isect;
-      bool hit = intersect_bvh(ray,bvhNodes,meshes,buffers,triangles,isect);
+      bool hit = intersect_bvh(ray,_bvhNodes,_meshes,buffers,triangles,isect);
       // placeholder materials
       PBRMaterial material;
       static_assert(sizeof(PBRMaterial) == 32, "layout mismatch");
       if(hit){
          CUDA_ASSERT(numMaterials > 0, "Should have atleast one material");
-         material = materials[(x+y) % numMaterials];
+         // material = _materials[(x+y) % numMaterials];
+         output[y*w+x] = make_float4(0,1,0,1);
       }else
-         material.baseColorFactor = make_float4(1,1,1,1);
-      output[y*w+x] =  material.baseColorFactor; 
+         output[y*w+x] = make_float4(0,0,0,1);
+      return;
+      // material.baseColorFactor = make_float4(1,0,0,1);
+      // output[y*w+x] =  material.baseColorFactor; 
 }
