@@ -22,9 +22,11 @@ class Transform:
          self._matrix = matrix.astype(np.float32)
          self._inverse_matrix = np.linalg.inv(self._matrix).astype(np.float32)
 
-   def identity(self):
-      self._matrix = np.identity(4, dtype=np.float32)
-      self._inverse_matrix = np.identity(4, dtype=np.float32)
+   @staticmethod
+   def identity():
+      _matrix = np.identity(4, dtype=np.float32)
+      _inverse_matrix = np.identity(4, dtype=np.float32)
+      return Transform(_matrix, _inverse_matrix)
 
    @property
    def matrix(self):

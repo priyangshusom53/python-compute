@@ -4,10 +4,11 @@ import logging
 import numpy as np
 
 from python_raytracer.core.log import logger
+from python_raytracer.core import debugging
 from python_raytracer.loader.gltf_loader import GLTFLoader
 from python_raytracer.core.geometry.transformation import Transform
 from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
-from python_raytracer.core.camera.simplecamera import PerspectiveCamera
+from python_raytracer.core.camera.simplecamera import (PerspectiveCamera,Film)
 from python_raytracer.pathtracer.pathtracer import PathTracer
 from python_raytracer.plots.o3dplots import plot_mesh_data
 from python_raytracer.bvh import bvh
@@ -18,7 +19,7 @@ def main(debug:bool):
 
    # setup log
    logger.log_config()
-   logging.getLogger(__name__)
+   log = logging.getLogger(__name__)
 
    # load the scene
    loader = GLTFLoader()
@@ -104,10 +105,45 @@ def main(debug:bool):
    #                all_uvs, 
    #                bvh_bounds)
 
-   tracer = PathTracer(meshes)
+   tracer = PathTracer(debug,meshes)
    vs = Visualizer(meshes)
-   cb = lambda:tracer.render(debug,cam_transform=vs.get_camera_transform())
-   vs.add_key_callback('r',cb)
+   # setup camera
+   cam = PerspectiveCamera(Transform.identity(),120,film=Film(1920,1080))
+
+   def render_on_keypress():
+      cam.set_world_transform(Transform.translate(0,0,-30))
+      rays = cam.generate_camera_rays()
+      tracer.render(debug,rays)
+      
+   vs.add_key_callback('t',render_on_keypress)
+
+   # debug rays and bounds
+   cam.set_world_transform(Transform(Transform.translate(0,0,30).matrix @ Transform.scale(1,1,-1).matrix))
+   rays = cam.generate_camera_rays()
+   indices = np.indices((1080,1920))
+   indices = np.stack([indices[0],indices[1]],axis=2)
+   mask = ((indices[:,:,0] % 100 == 0) & (indices[:,:,1] % 100 == 0))
+   ray_os = rays[mask][:,0:3].copy().reshape((-1,3))
+   ray_ds = rays[mask][:,4:7].copy().reshape((-1,3))
+   ray_actor = debugging.Gizmo().draw_ray_vtk(ray_os,ray_ds)
+   del ray_os
+   del ray_ds
+   vs.add_actors([ray_actor])
+   def show_debug_rays_per_frame(a,b):
+      log.debug("VTK StartEvent:=======")
+      vs.follow_scene_cam(ray_actor)
+   vs.add_render_event_callback(show_debug_rays_per_frame)
+
+   all_world_bounds = np.ascontiguousarray(np.concatenate([mesh.world_bounds for mesh in meshes],axis=0,dtype=np.float32))
+   bvh_nodes,_ = bvh.calculate_bvh(all_world_bounds,4)
+   bounds_min = bvh_nodes["bounds_min"][:, :3]
+   bounds_max = bvh_nodes["bounds_max"][:, :3]
+   bvh_bounds = np.stack([bounds_min, bounds_max], axis=1)
+
+   del all_world_bounds
+   del bvh_nodes
+   bounds_actors = debugging.Gizmo().draw_aabb3_vtk(bvh_bounds,max_count=50)
+   vs.add_actors(bounds_actors)
    vs.start()
 
 

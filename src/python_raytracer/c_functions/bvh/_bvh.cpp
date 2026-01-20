@@ -262,6 +262,7 @@ int flatten_bvh_tree(LinearBVHNode* linearNodes, BVHBuildNode* node, int* offset
     return myoffset;
 }
 
+// works in Depth-First manner
 BVHBuildNode* recursive_build(
     std::vector<BVHBuildNode*>& nodePtrs,
     std::vector<BVHTriangleInfo>& bvhTriangleInfos,

@@ -4,6 +4,8 @@ import logging
 import random
 from pathlib import Path
 
+from python_raytracer.core import debugging
+from python_raytracer.core.cuda_compute import CudaKernel 
 from python_raytracer.core.geometry.transformation import Transform
 from python_raytracer.core.renderer.renderer import Renderer
 from python_raytracer.core.material.pbr_material import PBRMaterial
@@ -32,7 +34,9 @@ class PathTracer(Renderer):
                 'd_triangles',
                 'd_meshes',
                 'd_bvh_nodes',
-                'd_materials']
+                'd_materials',
+                
+                'trace_kernel']
 
    def _create_attribute_buffers(self,meshes:list[TriangleMesh]):
       index_blocks = []
@@ -140,7 +144,7 @@ class PathTracer(Renderer):
       
          triangles_mesh_idx = np.full(shape=(triangles_of_mesh.shape[0],),fill_value=mesh_idx,dtype=np.int32)
 
-         triangles = np.stack((triangles_mesh_idx, triangles_of_mesh - mesh['firstTriangleIdx']),axis=1).astype(np.int32)
+         triangles = np.stack((triangles_mesh_idx, triangles_of_mesh),axis=-1).astype(np.int32)
 
          triangle_blocks.append(triangles)
       triangles = np.concatenate(triangle_blocks,axis=0,dtype=np.int32)
@@ -149,39 +153,12 @@ class PathTracer(Renderer):
    # buffer numpy arrays should be C_CONTIGUOUS and contagious array
    def render(self,
               debug:bool,
-              cam_transform:Transform,
-              materials:np.ndarray=None):
+              rays:np.ndarray,
+              ):
       logger = logging.getLogger(__name__)
       if debug:
          logger.info(f"{__name__} running in debug mode")
 
-      # # <Make cupy arrays>
-      # d_index_buff = cp.asarray(self.index_buff)
-      # d_vertex_buff = cp.asarray(self.vert_buff)
-      # d_normal_buff = cp.asarray(self.norm_buff)
-      # d_uv_buff = cp.asarray(self.uv_buff)
-      # d_triangles = cp.asarray(self.triangles)
-      # d_meshes = cp.asarray(self.np_gpu_meshes)
-      # d_bvh_nodes = cp.asarray(self.bvh_nodes)
-
-      # make place holder materials
-      # num_materials = 10
-      # material_dtype = np.dtype([
-      #    ("baseColorFactor", np.float32,4),
-      #    ("metallic", np.float32),
-      #    ("roughness", np.float32),
-      #    ("_pad", np.float32, 2),
-      # ])
-      # assert material_dtype.itemsize == 32
-      # materials = np.zeros(num_materials,dtype=material_dtype)
-      # for i in range(0,10):
-      #    materials[i]["baseColorFactor"] = [random.random(),random.random(),random.random(),1]
-      # d_materials = cp.asarray(np.ascontiguousarray(materials))
-
-      # get camera rays
-      cam = PerspectiveCamera(cam_transform,120,film=Film(1920,1080))
-      rays = cam.generate_camera_rays()
-      rays[:,:,7] = np.float32(np.inf) # set tmax
       d_rays = cp.asarray(np.ascontiguousarray(rays))
       # set output image
       W, H = 1920, 1080
@@ -189,18 +166,7 @@ class PathTracer(Renderer):
          (H, W, 4),
          dtype=cp.float32
       )
-
-      # path from project root top
-      kernel_path = ""
-      if debug:
-         kernel_path = Path(Path(__file__).parent / "cuda/build/ptx/Debug/trace.ptx").resolve()
-      else:
-         kernel_path = Path(Path(__file__).parent / "cuda/build/ptx/Release/trace.ptx").resolve()
-
-      module = cp.RawModule(
-         path=str(kernel_path),
-      )
-      trace_kernel = module.get_function("trace_scene")
+      
       threads = (16, 16, 1)
       blocks = (
          (W + threads[0] - 1) // threads[0],
@@ -208,40 +174,36 @@ class PathTracer(Renderer):
          1
       )
 
-      logger.info(f"Invoking kernel: trace_scene")
-      try:
-         trace_kernel(
-            blocks,
-            threads,
-            (
-               d_rays,                     # Ray*
-               np.int32(W),
-               np.int32(H),
-               self.d_index_buff,          # int3*
-               self.d_vert_buff,           # float4*
-               self.d_norm_buff,           # float4*
-               self.d_uv_buff,             # float2*
-               np.int32(self.n_verts),
-               self.d_meshes,              # TriangleMesh*
-               self.d_triangles,           # Triangle*
-               np.int32(self.n_tris),
-               self.d_bvh_nodes,           # LinearBVHNode*
-               self.d_materials,           # PBRMaterial*
-               np.int32(10),               # numMaterials
-               d_output                    # float4*
-            )
-         )
-         cp.cuda.runtime.deviceSynchronize()
-      except cp.cuda.runtime.CUDARuntimeError as e:
-         logger.error(f"CUDA ERROR: {e}")
-         raise
+      
+      self.trace_kernel.launch(
+         blocks,
+         threads,
+         args=[
+            d_rays,                     # Ray*
+            np.int32(W),
+            np.int32(H),
+            self.d_index_buff,          # int3*
+            self.d_vert_buff,           # float4*
+            self.d_norm_buff,           # float4*
+            self.d_uv_buff,             # float2*
+            np.int32(self.n_verts),
+            self.d_meshes,              # TriangleMesh*
+            self.d_triangles,           # Triangle*
+            np.int32(self.n_tris),
+            self.d_bvh_nodes,           # LinearBVHNode*
+            self.d_materials,           # PBRMaterial*
+            np.int32(10),               # numMaterials
+            d_output                    # float4*
+         ],
+         debug=debug
+      )
 
       # save result to image
       image = cp.asnumpy(d_output)
       save_to_image(image,1920,1080,"RGBA", "output.png",debug)
       logger.info("image saved to output.png")
       
-   def __init__(self,meshes:list[TriangleMesh],materials:np.ndarray=None):
+   def __init__(self, debug:bool, meshes:list[TriangleMesh],materials:np.ndarray=None):
       # <Compute mesh attributes>
       n_tris, n_verts, idx_buff, vert_buff, norm_buff, uv_buff = self._create_attribute_buffers(meshes)
       
@@ -309,6 +271,10 @@ class PathTracer(Renderer):
       for i in range(0,10):
          materials[i]["baseColorFactor"] = [random.random(),random.random(),random.random(),1]
       self.d_materials = cp.asarray(np.ascontiguousarray(materials.view(np.uint8)))
+
+      src_path = Path(Path(__file__).parent / "cuda/trace.cu")
+      cmake_dir = Path(Path(__file__).parent / "cuda")
+      self.trace_kernel = CudaKernel(str(cmake_dir),str(src_path),"trace_scene",debug)
 
    def render_screen_extent(self,scene,extent):
       raise NotImplementedError

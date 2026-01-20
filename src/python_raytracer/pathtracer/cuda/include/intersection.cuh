@@ -75,7 +75,7 @@ __device__ bool intersect_triangle(
 
    // get vertex data from attribute buffers
    TriangleMesh mesh = meshes[triangle.meshIdx];
-   int globalTriIdx = (mesh.firstTriangleIdx+triangle.triangleIdx);
+   int globalTriIdx = triangle.triangleIdx;
 	// CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].x < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
 	// CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].y < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
 	// CUDA_ASSERT((buffers.indexBuffer[globalTriIdx].z < mesh.firstVertexIdx+mesh.numVertices),"indices should be less than numVertices, buffer overflow");
@@ -104,6 +104,10 @@ __device__ bool intersect_triangle(
    float4 p0 = buffers.vertexBuffer[i0];
    float4 p1 = buffers.vertexBuffer[i1];
    float4 p2 = buffers.vertexBuffer[i2];
+	p0.z = -p0.z;
+	p1.z = -p1.z;
+	p2.z = -p2.z;
+
 
    // translate vertices with ray origin
    float4 p0t = p0 - ray.o;
@@ -111,9 +115,9 @@ __device__ bool intersect_triangle(
    float4 p2t = p2 - ray.o;
 
    // make z axis the maxDim of ray.d
-   int kz=maxDim(vecAbs(ray.d));
-   int kx=kz +1;if(kx==3)kx=0;
-   int ky=kx +1;if(ky==3)ky=0;
+   int kz = _maxDim(vecAbs(ray.d));
+   int kx = kz + 1; if(kx==3)kx=0;
+   int ky = kx + 1; if(ky==3)ky=0;
 	
 	float4 d = permute3(ray.d, kx, ky, kz);
 	p0t=permute3(p0t,kx,ky,kz);
@@ -203,6 +207,7 @@ __device__ bool intersect_triangle(
 		if(!(intersect_triangle(ray,meshes,buffers,triangle,tHit,isect)))
 			return false;
 		ray.d.w = tHit;
+		printf("triangle intersection");
 		return true;
 }
 
@@ -233,11 +238,11 @@ __device__ bool intersect_bvh(
 				}else{
 					if (dirIsNeg[node.axis]) {
 						nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
-						CUDA_ASSERT(toVisitOffset < 64, "BVH stack overflow");
+						// CUDA_ASSERT(toVisitOffset < 64, "BVH stack overflow");
 						currentNodeIndex = node.offset;
 					} else {
 						nodesToVisit[toVisitOffset++] = node.offset;
-						CUDA_ASSERT(toVisitOffset < 64, "BVH stack overflow");
+						// CUDA_ASSERT(toVisitOffset < 64, "BVH stack overflow");
 						currentNodeIndex = currentNodeIndex + 1;
 					}
 				}

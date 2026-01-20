@@ -61,7 +61,7 @@ extern "C" __global__ void trace_scene(
          // material = _materials[(x+y) % numMaterials];
          output[y*w+x] = make_float4(0,1,0,1);
       }else
-         output[y*w+x] = make_float4(0,0,0,1);
+         output[y*w+x] = make_float4(1,0,0,1);
       return;
       // material.baseColorFactor = make_float4(1,0,0,1);
       // output[y*w+x] =  material.baseColorFactor; 

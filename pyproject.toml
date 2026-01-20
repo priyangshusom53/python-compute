@@ -21,6 +21,7 @@ dependencies = [
     "Pillow",
     "cupy",
     "vtk",
+    "coloredlogs",
 ]
 
 [tool.scikit-build]

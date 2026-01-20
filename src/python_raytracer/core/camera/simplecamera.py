@@ -63,6 +63,9 @@ class ProjectiveCamera:
       r = Quaternion.mat4x4(q)
       cam_to_world = Transform(t.matrix @ r)
       return cam_to_world
+   
+   def set_world_transform(self,cam_to_world:Transform):
+      self.camera_to_world = cam_to_world
 
 class PerspectiveCamera(ProjectiveCamera):
 
@@ -128,5 +131,6 @@ class PerspectiveCamera(ProjectiveCamera):
       ray_os = ray_os @ self.camera_to_world.matrix.T
       ray_ds = ray_ds @ self.camera_to_world.matrix.T
       rays = np.concatenate((ray_os,ray_ds),axis=2,dtype=np.float32)
+      rays[:,:,7] = np.float32(np.inf)
       return rays # shape=(H,W,8)
    

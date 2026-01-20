@@ -19,6 +19,7 @@ class Visualizer:
             deep=1,
             array_type=vtk.VTK_FLOAT
       )
+      del all_world_pos3
       vtk_points = vtk.vtkPoints()
       vtk_points.SetData(vtk_points_data)
 
@@ -33,6 +34,8 @@ class Visualizer:
          np.hstack((cell_counts,all_indices)).astype(np.int64).ravel(),
          deep=1
       )
+      del all_indices
+      del cell_counts
       vtk_cells = vtk.vtkCellArray()
       vtk_cells.SetCells(mesh.n_triangles,vtk_cells_data)
 
@@ -68,6 +71,21 @@ class Visualizer:
       self.vtk_interactor.Initialize()
       self.vtk_interactor.Start()
 
+   def add_actors(self,actors:list[vtk.vtkActor]):
+      for actor in actors:
+         self.vtk_renderer.AddActor(actor)
+
+   def get_scene_cam(self):
+      return self.vtk_renderer.GetActiveCamera()
+   
+   def follow_scene_cam(self,actor:vtk.vtkActor):
+      camera = self.vtk_renderer.GetActiveCamera()  
+      view_matrix = camera.GetViewTransformMatrix()
+      world_matrix = vtk.vtkMatrix4x4()
+      world_matrix.DeepCopy(view_matrix)
+      world_matrix.Invert()
+      actor.SetUserMatrix(world_matrix)
+
    def get_camera_transform(self):
       rh_to_lh = Transform.scale(1,1,-1)
       vtk_camera = self.vtk_renderer.GetActiveCamera()
@@ -86,3 +104,6 @@ class Visualizer:
          if _key == key:
             callback()
       self.vtk_interactor.AddObserver("KeyPressEvent", on_key_press)
+   
+   def add_render_event_callback(self,callback:Callable):
+      self.vtk_renderer.AddObserver("RenderEvent", callback)

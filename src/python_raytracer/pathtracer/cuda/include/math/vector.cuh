@@ -69,7 +69,6 @@ __device__ __forceinline__ float4 operator+=(float4 &a, const float4 b)
    a.x += b.x;
    a.y += b.y;
    a.z += b.z;
-   a.w += b.w;
    return a;
 }
 
@@ -102,13 +101,10 @@ __device__ __forceinline__ float4 operator-=(float4 &a, const float4 b)
    a.x -= b.x;
    a.y -= b.y;
    a.z -= b.z;
-   a.w -= b.w;
    return a;
 }
 
-__device__ __forceinline__
-    float4
-    operator-(const float4 a, const float4 b)
+__device__ __forceinline__ float4 operator-(const float4 a, const float4 b)
 {
    float4 c = a;
    c -= b;
@@ -135,7 +131,6 @@ __device__ __forceinline__ float4 operator*=(float4 &a, const float s)
    a.x *= s;
    a.y *= s;
    a.z *= s;
-   a.w *= s;
    return a;
 }
 
@@ -251,7 +246,7 @@ __device__ __forceinline__ float minComponent(const float4 v) { return fminf(v.x
 
 __device__ __forceinline__ float maxComponent(const float4 v) { return fmaxf(v.x, fmaxf(v.y, v.z)); }
 
-__device__ __forceinline__ int maxDim(const float4 v)
+__device__ __forceinline__ int _maxDim(const float4 v)
 {
    return (v.x > v.y) ? ((v.x > v.z) ? 0 : 2) : ((v.y > v.z) ? 1 : 2);
 }
