@@ -49,10 +49,11 @@ class PathTracer(Renderer):
       for mesh in meshes:
          # COPY indices before modifying
          idx = mesh.vertex_indices.astype(np.int32).copy()
+         idx[:,1],idx[:,2] = idx[:,2],idx[:,1]
          idx += vertex_offset
          index_blocks.append(idx)
 
-         vertex_blocks.append(mesh.positions.array @ mesh.transform.matrix.T)
+         vertex_blocks.append((mesh.positions.array @ mesh.transform.matrix.T) @ Transform.scale(1,1,-1).matrix.T)
          normal_blocks.append(mesh.normals.array)
          uv_blocks.append(mesh.uv.array)
 

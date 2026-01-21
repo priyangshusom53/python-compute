@@ -15,6 +15,7 @@ def json_loader(path:str):
 from python_raytracer.loader.scene_loader import FLoader
 from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
 from python_raytracer.core.material.pbr_material import PBRMaterial
+from python_raytracer.core.geometry.transformation import Transform
 
 # trimesh types
 import trimesh 
@@ -114,7 +115,7 @@ class GLTFLoader(FLoader):
                 # convert to world space tranform with 
                 # transform.T as transform matrix and 
                 # tri_h is row-major
-                tri_world_h = tri_h @ transform.T
+                tri_world_h = (tri_h @ transform.T) @ Transform.scale(1,1,-1).matrix
                 triangles_world = tri_world_h[..., :3]
                 # get triangles world bounds
                 min_coords = triangles_world.min(axis=1)

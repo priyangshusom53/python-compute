@@ -148,7 +148,6 @@ __device__ bool intersect_triangle(
 	if (det == 0)
 		return false;
 	// compute scaled hit distance to triangle and test against ray t range
-	printf("Intersection found with triangle");
 	p0t.z *= Sz;
 	p1t.z *= Sz;
 	p2t.z *= Sz;
@@ -207,7 +206,6 @@ __device__ bool intersect_triangle(
 		if(!(intersect_triangle(ray,meshes,buffers,triangle,tHit,isect)))
 			return false;
 		ray.d.w = tHit;
-		printf("triangle intersection");
 		return true;
 }
 

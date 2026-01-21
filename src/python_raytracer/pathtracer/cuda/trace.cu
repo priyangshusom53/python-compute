@@ -52,7 +52,12 @@ extern "C" __global__ void trace_scene(
          uvBuffer
       };
       SurfaceInteraction isect;
-      bool hit = intersect_bvh(ray,_bvhNodes,_meshes,buffers,triangles,isect);
+      bool hit = false;
+      for(int i=0; i<numTriangles; ++i){
+         hit = intersect_triangle(ray, _meshes, buffers,triangles[i],isect);
+         if(hit) break;
+      }
+      
       // placeholder materials
       PBRMaterial material;
       static_assert(sizeof(PBRMaterial) == 32, "layout mismatch");
@@ -60,8 +65,9 @@ extern "C" __global__ void trace_scene(
          CUDA_ASSERT(numMaterials > 0, "Should have atleast one material");
          // material = _materials[(x+y) % numMaterials];
          output[y*w+x] = make_float4(0,1,0,1);
-      }else
+      }else{
          output[y*w+x] = make_float4(1,0,0,1);
+      }
       return;
       // material.baseColorFactor = make_float4(1,0,0,1);
       // output[y*w+x] =  material.baseColorFactor; 

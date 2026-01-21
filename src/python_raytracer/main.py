@@ -23,9 +23,10 @@ def main(debug:bool):
 
    # load the scene
    loader = GLTFLoader()
-   path = r"D:\3D Models\sponza_gltf\scene.gltf"
+   path = r"D:\3D Models\\gltf_sample_scenes\\glTF-Sample-Assets\\Models\ABeautifulGame\\glTF\ABeautifulGame.gltf"
    meshes, materials = loader.load(path)
-
+   for mesh in meshes:
+      mesh.set_positions(mesh.positions.array * 100.0)
    # # prepare arrays for collecting vertex attribute data 
    # # into single arrays
    # all_vertices:np.ndarray = None
@@ -111,7 +112,8 @@ def main(debug:bool):
    cam = PerspectiveCamera(Transform.identity(),120,film=Film(1920,1080))
 
    def render_on_keypress():
-      cam.set_world_transform(Transform.translate(0,0,-30))
+      cam.set_world_transform(vs.get_camera_transform())
+      print(vs.get_camera_transform().matrix)
       rays = cam.generate_camera_rays()
       tracer.render(debug,rays)
       
@@ -129,10 +131,10 @@ def main(debug:bool):
    del ray_os
    del ray_ds
    vs.add_actors([ray_actor])
-   def show_debug_rays_per_frame(a,b):
+   def show_debug_rays_per_frame():
       log.debug("VTK StartEvent:=======")
       vs.follow_scene_cam(ray_actor)
-   vs.add_render_event_callback(show_debug_rays_per_frame)
+   vs.add_key_callback('t',show_debug_rays_per_frame)
 
    all_world_bounds = np.ascontiguousarray(np.concatenate([mesh.world_bounds for mesh in meshes],axis=0,dtype=np.float32))
    bvh_nodes,_ = bvh.calculate_bvh(all_world_bounds,4)

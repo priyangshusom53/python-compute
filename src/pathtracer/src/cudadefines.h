@@ -3,7 +3,12 @@
 
 #if defined(__CUDACC__)
 #define CPU_GPU __host__ __device__
-#else CPU_GPU
+#else 
+#define CPU_GPU
+#endif
+
+#if defined(__CUDA_ARCH__)
+#define GPU_CODE
 #endif
 
 #endif
