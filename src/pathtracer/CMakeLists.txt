@@ -8,11 +8,19 @@ set(CMAKE_CUDA_ARCHITECTURES native)
 
 set(PROJECT_SOURCES
    src/cudadefines.h
+   src/mathconstants.h
    src/trace.cu
    src/vector.h
    src/vector.cu
    src/point.h
    src/point.cu
+   src/normal.h
+   src/normal.cu
+   src/ray.h
+   src/ray.cu
+   src/bounds.h
+   src/bounds.cu
+   src/utils.h
 )
 
 # By default nvcc can't compile .cpp .h file, here Language property forces compilation of .cpp files using nvcc

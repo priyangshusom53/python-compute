@@ -2,8 +2,10 @@
 #define VECTOR_H
 
 #include"cudadefines.h"
+#include"normal.h"
 
 #include<cmath>
+
 
 template<typename T>
 struct Vector4;
@@ -18,6 +20,7 @@ struct Vector3
    CPU_GPU Vector3();
    CPU_GPU Vector3(T _x, T _y, T _z);
    CPU_GPU explicit Vector3(const Vector4<T> &);
+   CPU_GPU explicit Vector3(const Normal3<T> &n);
    CPU_GPU explicit operator Vector4<T>() const;
    CPU_GPU explicit operator Vector2<T>() const; 
    CPU_GPU T& operator[](int);
@@ -69,9 +72,9 @@ struct Vector2{
    CPU_GPU Vector2(T _x, T _y);
 };
 
-typedef Vector4<float> Vec4f;
-typedef Vector3<float> Vec3f;
-typedef Vector2<float> Vec2f;
+typedef Vector4<float> Vector4f;
+typedef Vector3<float> Vector3f;
+typedef Vector2<float> Vector2f;
 
 
 // Vector3 definition
@@ -83,6 +86,9 @@ CPU_GPU Vector3<T>::Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
 
 template<typename T>
 CPU_GPU Vector3<T>::Vector3(const Vector4<T> &v) : x(v.x), y(v.y), z(v.z) {}
+
+template<typename T>
+CPU_GPU Vector3<T>::Vector3(const Normal3<T> &n) : x(n.x), y(n.y), z(n.z) {}
 
 template<typename T>
 CPU_GPU Vector3<T>::operator Vector4<T>() const {
@@ -168,8 +174,7 @@ CPU_GPU Vector3<T> Vector3<T>::operator/(const T s) const {
 
 template<typename T>
 CPU_GPU inline T Vector3<T>::LengthSquared() const {
-   const Vector3<T> v = *this;
-   return v.x * v.x + v.y * v.y + v.z * v.z;
+   return x * x + y * y + z * z;
 }
 
 template<typename T>
@@ -205,11 +210,11 @@ CPU_GPU T Vector3<T>::AbsDot(const Vector3<T> &v1, const Vector3<T> &v2){
 
 template<typename T>
 CPU_GPU Vector3<T> Vector3<T>::Cross(const Vector3<T> &v1, const Vector3<T> &v2){
-   return Vector3<T>(
-      (v1.y * v2.z) - (v1.z * v2.y),
-      (v1.z * v2.x) - (v1.x * v2.z),
-      (v1.x * v2.y) - (v1.y * v2.x)
-   )
+    return Vector3<T>(
+        (v1.y * v2.z) - (v1.z * v2.y),
+        (v1.z * v2.x) - (v1.x * v2.z),
+        (v1.x * v2.y) - (v1.y * v2.x)
+    );
 }
 
 template<typename T>
