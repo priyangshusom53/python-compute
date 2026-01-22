@@ -2,8 +2,8 @@
 #define VECTOR_H
 
 #include"cudadefines.h"
-#include"normal.h"
 
+#include<algorithm>
 #include<cmath>
 
 
@@ -18,9 +18,9 @@ struct Vector3
 {
    T x,y,z;
    CPU_GPU Vector3();
+   CPU_GPU Vector3(T _x);
    CPU_GPU Vector3(T _x, T _y, T _z);
    CPU_GPU explicit Vector3(const Vector4<T> &);
-   CPU_GPU explicit Vector3(const Normal3<T> &n);
    CPU_GPU explicit operator Vector4<T>() const;
    CPU_GPU explicit operator Vector2<T>() const; 
    CPU_GPU T& operator[](int);
@@ -29,10 +29,10 @@ struct Vector3
    CPU_GPU Vector3<T> operator+(const Vector3<T>& other) const;
    CPU_GPU Vector3<T>& operator-=(const Vector3<T>& other);
    CPU_GPU Vector3<T> operator-(const Vector3<T>& other) const;
-   CPU_GPU Vector3<T>& operator*=(const T s);
-   CPU_GPU Vector3<T> operator*(const T s) const;
-   CPU_GPU Vector3<T>& operator/=(const T invS);
-   CPU_GPU Vector3<T> operator/(const T invS) const;
+   CPU_GPU Vector3<T>& operator*=(T s);
+   CPU_GPU Vector3<T> operator*(T s) const;
+   CPU_GPU Vector3<T>& operator/=(T invS);
+   CPU_GPU Vector3<T> operator/(T invS) const;
    CPU_GPU T LengthSquared() const;
    CPU_GPU T Length() const;
    CPU_GPU static Vector3<T> Normalize(const Vector3<T>&);
@@ -49,7 +49,7 @@ struct Vector3
 };
 
 template<typename T>
-CPU_GPU inline Vector3<T> operator*(const T s, const Vector3<T>& v);
+CPU_GPU inline Vector3<T> operator*(T s, const Vector3<T>& v);
 
 
 template<typename T>
@@ -82,13 +82,13 @@ template<typename T>
 CPU_GPU Vector3<T>::Vector3() : x(0),y(0),z(0){}
 
 template<typename T>
+CPU_GPU Vector3<T>::Vector3(T _x) : x(_x), y(_x), z(_x) {}
+
+template<typename T>
 CPU_GPU Vector3<T>::Vector3(T x, T y, T z) : x(x), y(y), z(z) {}
 
 template<typename T>
 CPU_GPU Vector3<T>::Vector3(const Vector4<T> &v) : x(v.x), y(v.y), z(v.z) {}
-
-template<typename T>
-CPU_GPU Vector3<T>::Vector3(const Normal3<T> &n) : x(n.x), y(n.y), z(n.z) {}
 
 template<typename T>
 CPU_GPU Vector3<T>::operator Vector4<T>() const {
@@ -139,7 +139,7 @@ CPU_GPU Vector3<T> Vector3<T>::operator-(const Vector3<T> &other) const {
 }
 
 template<typename T>
-CPU_GPU Vector3<T>& Vector3<T>::operator*=(const T s){
+CPU_GPU Vector3<T>& Vector3<T>::operator*=(T s){
    this->x *= s;
    this->y *= s;
    this->z *= s;
@@ -147,19 +147,19 @@ CPU_GPU Vector3<T>& Vector3<T>::operator*=(const T s){
 }
 
 template<typename T>
-CPU_GPU Vector3<T> Vector3<T>::operator*(const T s) const {
+CPU_GPU Vector3<T> Vector3<T>::operator*(T s) const {
    Vector3<T> result = *this;
    return result *= s;
 }
 
 template<typename T>
-CPU_GPU Vector3<T> operator*(const T s, const Vector3<T>& v){
+CPU_GPU Vector3<T> operator*(T s, const Vector3<T>& v){
    Vector3<T> result = v * s;
    return result;
 }
 
 template<typename T>
-CPU_GPU Vector3<T>& Vector3<T>::operator/=(const T s){
+CPU_GPU Vector3<T>& Vector3<T>::operator/=(T s){
    this->x /= s;
    this->y /= s;
    this->z /= s;
@@ -167,7 +167,7 @@ CPU_GPU Vector3<T>& Vector3<T>::operator/=(const T s){
 }
 
 template<typename T>
-CPU_GPU Vector3<T> Vector3<T>::operator/(const T s) const {
+CPU_GPU Vector3<T> Vector3<T>::operator/(T s) const {
    Vector3<T> result = *this;
    return result /= s;
 }

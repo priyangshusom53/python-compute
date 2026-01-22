@@ -13,6 +13,7 @@ template<typename T>
 struct Point3{
    T x,y,z;
    CPU_GPU Point3();
+   CPU_GPU Point3(T);
    CPU_GPU Point3(T, T, T);
    CPU_GPU T& operator[](int);
    CPU_GPU T  operator[](int) const;
@@ -26,8 +27,8 @@ struct Point3{
    CPU_GPU static T Distance(const Point3<T> &p1, const Point3<T> &p2);
    CPU_GPU Point3<T>& operator+=(const Point3<T>& other);
    CPU_GPU Point3<T> operator+(const Point3<T>& other) const;
-   CPU_GPU Point3<T>& operator*=(const T s);
-   CPU_GPU Point3<T> operator*(const T s) const;
+   CPU_GPU Point3<T>& operator*=(T s);
+   CPU_GPU Point3<T> operator*(T s) const;
    CPU_GPU static Point3<T> Lerp(float t, const Point3<T> &p0, const Point3<T> &p1);
    CPU_GPU static Point3<T> Min(const Point3<T> &v1, const Point3<T> &v2);
    CPU_GPU static Point3<T> Max(const Point3<T> &v1, const Point3<T> &v2);
@@ -35,7 +36,7 @@ struct Point3{
 };
 
 template<typename T>
-CPU_GPU inline Point3<T> operator*(const T s, const Point3<T>& v);
+CPU_GPU inline Point3<T> operator*(T s, const Point3<T>& v);
 
 
 template<typename T>
@@ -50,6 +51,7 @@ template<typename T>
 struct Point2{
    T x,y;
    CPU_GPU Point2();
+   CPU_GPU Point2(T);
    CPU_GPU Point2(T, T);
 };
 
@@ -60,6 +62,9 @@ typedef Point2<float> Point2f;
 // Point3 definition
 template<typename T>
 CPU_GPU Point3<T>::Point3() : x(0), y(0), z(0) {}
+
+template<typename T>
+CPU_GPU Point3<T>::Point3(T _x) : x(_x), y(_x), z(_x) {}
 
 template<typename T>
 CPU_GPU Point3<T>::Point3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
@@ -135,7 +140,7 @@ CPU_GPU Point3<T> Point3<T>::operator+(const Point3<T>& other) const {
 }
 
 template<typename T>
-CPU_GPU Point3<T>& Point3<T>::operator*=(const T s) {
+CPU_GPU Point3<T>& Point3<T>::operator*=(T s) {
    this->x *= s;
    this->y *= s;
    this->z *= s;
@@ -143,13 +148,13 @@ CPU_GPU Point3<T>& Point3<T>::operator*=(const T s) {
 }
 
 template<typename T>
-CPU_GPU Point3<T> Point3<T>::operator*(const T s) const {
+CPU_GPU Point3<T> Point3<T>::operator*(T s) const {
    Point3<T> result = *this;
    return result *= s;
 }
 
 template<typename T>
-CPU_GPU Point3<T> operator*(const T s, const Point3<T>& p){
+CPU_GPU Point3<T> operator*(T s, const Point3<T>& p){
    Point3<T> result = p * s;
    return result;
 }
@@ -200,6 +205,9 @@ CPU_GPU Point4<T>::operator Point3<T>() const{
 // Point2 definition
 template<typename T>
 CPU_GPU Point2<T>::Point2() : x(0), y(0) {}
+
+template<typename T>
+CPU_GPU Point2<T>::Point2(T _x): x(_x), y(_x) {}
 
 template<typename T>
 CPU_GPU Point2<T>::Point2(T _x, T _y) : x(_x), y(_y) {}
