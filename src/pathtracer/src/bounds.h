@@ -24,7 +24,7 @@ struct Bounds3f{
    CPU_GPU int  MaximumExtent() const;
    CPU_GPU Point3f Lerp(const Point3f &t) const;
    CPU_GPU Vector3f Offset(const Point3f &p) const;
-   CPU_GPU static Bounds3f Union(const Point3f& p, const Bounds3f& b);
+   CPU_GPU static Bounds3f Union(const Bounds3f& b, const Point3f& p);
    CPU_GPU static Bounds3f Union(const Bounds3f &b1, const Bounds3f &b2);
    CPU_GPU static Bounds3f Intersection(const Bounds3f &b1, const Bounds3f &b2);
    CPU_GPU static bool Overlaps(const Bounds3f &b1, const Bounds3f &b2);
@@ -94,7 +94,7 @@ CPU_GPU Vector3f Bounds3f::Offset(const Point3f& p) const {
 	return o;
 }
 
-CPU_GPU Bounds3f Bounds3f::Union(const Point3f& p, const Bounds3f& b) {
+CPU_GPU Bounds3f Bounds3f::Union(const Bounds3f& b, const Point3f& p) {
 
 #ifdef __CUDA_ARCH__
 	Bounds3f(Point3f(min(p.x, b.pMin.x),

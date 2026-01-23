@@ -56,7 +56,7 @@ struct Point2{
 };
 
 typedef Point3<float> Point3f;
-typedef Point3<float> Point4f;
+typedef Point4<float> Point4f;
 typedef Point2<float> Point2f;
 
 // Point3 definition
