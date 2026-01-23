@@ -20,6 +20,8 @@ set(PROJECT_SOURCES
    src/ray.cu
    src/bounds.h
    src/bounds.cu
+   src/matrix.h
+   src/transformation.h
    src/utils.h
 )
 
