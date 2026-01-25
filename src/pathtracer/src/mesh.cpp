@@ -1,95 +1,67 @@
 #include "mesh.h"
 #include <stdexcept>
 
-TriangleMesh::TriangleMesh(int nTriangles, const int indices[], int nVertices,
-	const float positions[], const float normals[] = nullptr,
-	const float uvs[] = nullptr, const float triangleBounds[] = nullptr,
-	const float ObjectToWorldMatrix[] = nullptr, int materialIndex = 0,
-	int handedness = LEFT_HANDED, bool generateNormals = false) {
+TriangleMesh::TriangleMesh(
+	int nTriangles,
+	const int indices[],
+	int nVertices,
+	const float positions[],
+	const float ObjectToWorldMatrix[] = nullptr,
+	const float normals[] = nullptr,
+	bool generateNormals = false,
+	const float uvs[] = nullptr,
+	const float triangleBounds[] = nullptr,
+	int materialIndex = 0,
+	int handedness = LEFT_HANDED
+) {
 
-	if (handedness == LEFT_HANDED) {
-		this->handedness = LEFT_HANDED;
-		this->nTriangles = nTriangles;
-		this->indices.reserve((3 * nTriangles));
-		for (int i = 0; i < 3 * nTriangles; ++i) {
-			this->indices.push_back(indices[i]);
-		}
-		this->nVertices = nVertices;
-		this->positions.reserve(nVertices);
+	
+	this->handedness = handedness;
+	this->hasNormals = false;
+	this->hasTexCoords = false;
+	this->nTriangles = nTriangles;
+	this->indices.reserve((3 * nTriangles));
+	for (int i = 0; i < 3 * nTriangles; ++i) {
+		this->indices.push_back(indices[i]);
+	}
+	this->nVertices = nVertices;
+	this->positions.reserve(nVertices);
+	for (int i = 0; i < 3 * nVertices; i += 3) {
+		this->positions.push_back(Point3f(positions[i], positions[i + 1], positions[i + 2]));
+	}
+	if (ObjectToWorldMatrix) {
+		this->ObjectToWorld = Transform(Matrix4f(ObjectToWorldMatrix));
+	}
+	else {
+		this->ObjectToWorld = Transform::Identity();
+	}
+
+	if (normals) {
+		this->normals.reserve(nVertices);
 		for (int i = 0; i < 3 * nVertices; i += 3) {
-			this->positions.push_back(Point3f(positions[i], positions[i + 1], positions[i + 2]));
+			this->normals.push_back(Normal3f(normals[i], normals[i + 1], normals[i + 2]));
 		}
-		if (normals) {
-			this->normals.reserve(nVertices);
-			for (int i = 0; i < 3 * nVertices; i += 3) {
-				this->normals.push_back(Normal3f(normals[i], normals[i + 1], normals[i + 2]));
-			}
-			this->hasNormals = true;
-		}
-		else if (generateNormals) {
-			CalculateNormals();
-			this->hasNormals = true;
-		}
-		else
-			this->hasNormals = false;
+		this->hasNormals = true;
+	}
+	else if (generateNormals) {
+		CalculateNormals();
+		this->hasNormals = true;
+	}
+	else
+		this->hasNormals = false;
 		
-		if(ObjectToWorldMatrix) {
-			this->ObjectToWorld = Transform(Matrix4f(ObjectToWorldMatrix));
-		}
-		else {
-			this->ObjectToWorld = Transform::Identity();
-		}
-		if(triangleBounds) {
-			this->triangleBounds.reserve(nTriangles);
-			for(int i = 0; i < 6 * nTriangles; i += 6) {
-				Point3f pMin(triangleBounds[i], triangleBounds[i + 1], triangleBounds[i + 2]);
-				Point3f pMax(triangleBounds[i + 3], triangleBounds[i + 4], triangleBounds[i + 5]);
-				this->triangleBounds.push_back(Bounds3f(pMin, pMax));
-			}
-		}
-		else {
-			CalculateTriangleBounds();
+	if(triangleBounds) {
+		this->triangleBounds.reserve(nTriangles);
+		for(int i = 0; i < 6 * nTriangles; i += 6) {
+			Point3f pMin(triangleBounds[i], triangleBounds[i + 1], triangleBounds[i + 2]);
+			Point3f pMax(triangleBounds[i + 3], triangleBounds[i + 4], triangleBounds[i + 5]);
+			this->triangleBounds.push_back(Bounds3f(pMin, pMax));
 		}
 	}
 	else {
-		this->handedness = RIGHT_HANDED;
-		this->nTriangles = nTriangles;
-		this->indices.reserve((3 * nTriangles));
-		for (int i = 0; i < 3 * nTriangles; i+=3) {
-			this->indices.push_back(indices[i]);
-			this->indices.push_back(indices[i + 2]);
-			this->indices.push_back(indices[i + 1]);
-		}
-		this->nVertices = nVertices;
-		this->positions.reserve(nVertices);
-		for (int i = 0; i < 3 * nVertices; i += 3) {
-			this->positions.push_back(Point3f(positions[i], positions[i + 1], -positions[i + 2]));
-		}
-		if (normals) {
-			this->normals.reserve(nVertices);
-			for (int i = 0; i < 3 * nVertices; i += 3) {
-				this->normals.push_back(Normal3f(normals[i], normals[i + 1], -normals[i + 2]));
-			}
-			this->hasNormals = true;
-		}
-		else if (generateNormals) {
-			CalculateNormals();
-			this->hasNormals = true;
-		}
-		else
-			this->hasNormals = false;
-
-		if (ObjectToWorldMatrix) {
-			auto objToWorldRH = Matrix4f(ObjectToWorldMatrix);
-			auto RH_to_LH = Transform::Scale(1.f, 1.f, -1.f).matrix;
-			this->ObjectToWorld = Transform(Matrix4f::MatMul(RH_to_LH, Matrix4f::MatMul(objToWorldRH, RH_to_LH)));
-		}
-		else {
-			this->ObjectToWorld = Transform::Identity();
-		}
-
 		CalculateTriangleBounds();
 	}
+	
 	if (uvs) {
 		this->uvs.reserve(nVertices);
 		for (int i = 0; i < 2 * nVertices; i += 2) {
@@ -100,92 +72,62 @@ TriangleMesh::TriangleMesh(int nTriangles, const int indices[], int nVertices,
 	else {
 		this->hasTexCoords = false;
 	}
-	
+	if (handedness == RIGHT_HANDED) {
+		ChangeHandedness(LEFT_HANDED);
+	}
 	this->materialIndex = materialIndex;
 }
 
-TriangleMesh::TriangleMesh(int nTriangles,
-	const int indices[], int nVertices, const Point3f positions[],
-	const Normal3f normals[] = nullptr, const Vector2f uvs[] = nullptr,
-	const Bounds3f triangleBounds[] = nullptr,
+TriangleMesh::TriangleMesh(
+	int nTriangles,
+	const std::vector<int>& indices,
+	int nVertices,
+	const std::vector<Point3f>& positions,
+	const std::vector<Normal3f>& normals = std::vector<Normal3f>(),
+	bool generateNormals = false,
+	const std::vector<Vector2f>& uvs = std::vector<Vector2f>(),
+	const std::vector<Bounds3f>& triangleBounds = std::vector<Bounds3f>(),
 	const Transform ObjectToWorld = Transform::Identity(),
-	int materialIndex = 0, int handedness = LEFT_HANDED,
-	bool generateNormals = false) {
+	int materialIndex = 0,
+	int handedness = LEFT_HANDED) {
 
-	if (handedness == LEFT_HANDED) {
-		this->handedness = LEFT_HANDED;
-		this->nTriangles = nTriangles;
-		this->indices.reserve((3 * nTriangles));
-		for (int i = 0; i < 3 * nTriangles; ++i) {
-			this->indices.push_back(indices[i]);
-		}
-		this->nVertices = nVertices;
-		this->positions.reserve(nVertices);
-		for (int i = 0; i < nVertices; i += 1) {
-			this->positions.push_back(positions[i]);
-		}
-		if (normals) {
-			this->normals.reserve(nVertices);
-			for (int i = 0; i < nVertices; i += 1) {
-				this->normals.push_back(normals[i]);
-			}
-			this->hasNormals = true;
-		}
-		else if (generateNormals) {
-			CalculateNormals();
-			this->hasNormals = true;
-		}
-		else
-			this->hasNormals = false;
+	this->handedness = handedness;
+	this->hasNormals = false;
+	this->hasTexCoords = false;
+	this->nTriangles = nTriangles;
+	this->indices.reserve((3 * nTriangles));
+	for (int i = 0; i < 3 * nTriangles; ++i) {
+		this->indices.push_back(indices[i]);
+	}
+	this->nVertices = nVertices;
+	this->positions.reserve(nVertices);
+	for (int i = 0; i < nVertices; ++i) {
+		this->positions.push_back(positions[i]);
+	}
 
-		this->ObjectToWorld = Transform(ObjectToWorld.matrix, ObjectToWorld.invMatrix);
-		if (triangleBounds) {
-			this->triangleBounds.reserve(nTriangles);
-			for (int i = 0; i < nTriangles; i += 1) {
-				this->triangleBounds.push_back(Bounds3f(triangleBounds[i].pMin, triangleBounds[i].pMax));
-			}
+	this->ObjectToWorld = ObjectToWorld;
+	if (!normals.empty()) {
+		for(int i = 0; i < nVertices; ++i) {
+			this->normals.push_back(normals[i]);
 		}
-		else {
-			CalculateTriangleBounds();
+		this->hasNormals = true;
+	}
+	else if (generateNormals) {
+		CalculateNormals();
+		this->hasNormals = true;
+	}
+	else
+		this->hasNormals = false;
+	if (!triangleBounds.empty()) {
+		for(int i = 0; i < nTriangles; ++i) {
+			this->triangleBounds.push_back(triangleBounds[i]);
 		}
 	}
 	else {
-		this->handedness = RIGHT_HANDED;
-		this->nTriangles = nTriangles;
-		this->indices.reserve((3 * nTriangles));
-		for (int i = 0; i < 3 * nTriangles; i += 3) {
-			this->indices.push_back(indices[i]);
-			this->indices.push_back(indices[i + 2]);
-			this->indices.push_back(indices[i + 1]);
-		}
-		this->nVertices = nVertices;
-		this->positions.reserve(nVertices);
-		for (int i = 0; i < 3 * nVertices; i += 3) {
-			this->positions.push_back(Point3f(positions[i].x, positions[i].y, -positions[i].z));
-		}
-		if (normals) {
-			this->normals.reserve(nVertices);
-			for (int i = 0; i < 3 * nVertices; i += 3) {
-				this->normals.push_back(Normal3f(normals[i].x, normals[i].y, -normals[i].z));
-			}
-			this->hasNormals = true;
-		}
-		else if (generateNormals) {
-			CalculateNormals();
-			this->hasNormals = true;
-		}
-		else
-			this->hasNormals = false;
-
-		auto objToWorldRH = ObjectToWorld.matrix;
-		auto RH_to_LH = Transform::Scale(1.f, 1.f, -1.f).matrix;
-		this->ObjectToWorld = Transform(Matrix4f::MatMul(RH_to_LH, Matrix4f::MatMul(objToWorldRH, RH_to_LH)));
-
 		CalculateTriangleBounds();
 	}
-	if (uvs) {
-		this->uvs.reserve(nVertices);
-		for (int i = 0; i < nVertices; i += 1) {
+	if (!uvs.empty()) {
+		for(int i = 0; i < nVertices; ++i) {
 			this->uvs.push_back(uvs[i]);
 		}
 		this->hasTexCoords = true;
@@ -193,8 +135,11 @@ TriangleMesh::TriangleMesh(int nTriangles,
 	else {
 		this->hasTexCoords = false;
 	}
-
+	if (handedness == RIGHT_HANDED) {
+		ChangeHandedness(LEFT_HANDED);
+	}
 	this->materialIndex = materialIndex;
+
 }
 
 void TriangleMesh::SetIndices(int nTriangles, const int indices[]) {
@@ -238,7 +183,6 @@ void TriangleMesh::CalculateNormals() {
 		this->normals[i1] = n;
 		this->normals[i2] = n;
 	}
-	this->hasNormals = true;
 }
 
 void TriangleMesh::SetNormals(int nVertices, const float normals[]) {
@@ -300,15 +244,8 @@ std::vector<Normal3f> TriangleMesh::WorldSpaceNormals() const {
 
 TriangleMesh& TriangleMesh::ChangeHandedness(int handedness) {
 	if (this->handedness != handedness) {
-		for (int i = 0; i < this->nVertices; ++i) {
-			positions[i].z = -positions[i].z;
-			if (this->hasNormals) {
-				normals[i].z = -normals[i].z;
-			}
-		}
-		for (int i = 0; i < this->nTriangles; ++i) {
-			std::swap(this->indices[3 * i + 1], this->indices[3 * i + 2]);
-		}
+		FlipZ();
+		FlipWindingOrder();
 		auto swapHandMatrix = Transform::Scale(1.f, 1.f, -1.f).matrix;
 		auto newObjToWorldMat = Matrix4f::MatMul(swapHandMatrix, Matrix4f::MatMul(this->ObjectToWorld.matrix, swapHandMatrix));
 		auto newInvObjToWorldMat = Matrix4f::MatMul(swapHandMatrix, Matrix4f::MatMul(this->ObjectToWorld.invMatrix, swapHandMatrix));
@@ -316,18 +253,32 @@ TriangleMesh& TriangleMesh::ChangeHandedness(int handedness) {
 		CalculateTriangleBounds();
 		this->handedness = handedness;
 	}
-}
-
-TriangleMesh TriangleMesh::ChangeHandedness(const TriangleMesh& mesh, int handedness) {
-
+	return *this;
 }
 
 void TriangleMesh::CalculateTriangleBounds() {
-	for (int i = 0; i < this->nTriangles; ++i) {
-		const Point3f& p0 = this->positions[this->indices[3 * i]];
-		const Point3f& p1 = this->positions[this->indices[3 * i + 1]];
-		const Point3f& p2 = this->positions[this->indices[3 * i + 2]];
+	triangleBounds.clear();
+	triangleBounds.reserve(nTriangles);
+	for (int i = 0; i < nTriangles; ++i) {
+		const Point3f& p0 = positions[indices[3 * i]];
+		const Point3f& p1 = positions[indices[3 * i + 1]];
+		const Point3f& p2 = positions[indices[3 * i + 2]];
 		Bounds3f b = Bounds3f::Union(Bounds3f::Union(Bounds3f(p0), p1), p2);
 		this->triangleBounds.push_back(b);
+	}
+}
+
+void TriangleMesh::FlipWindingOrder() {
+	for (int i = 0; i < nTriangles; ++i) {
+		std::swap(this->indices[3 * i + 1], this->indices[3 * i + 2]);
+	}
+}
+
+void TriangleMesh::FlipZ() {
+	for (int i = 0; i < nVertices; ++i) {
+		positions[i].z = -positions[i].z;
+		if (this->hasNormals) {
+			normals[i].z = -normals[i].z;
+		}
 	}
 }

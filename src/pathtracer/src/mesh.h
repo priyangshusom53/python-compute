@@ -28,17 +28,30 @@ public:
 	Transform ObjectToWorld;
 	int materialIndex;
 	int handedness;
-	TriangleMesh(int nTriangles, const int indices[], int nVertices, 
-		const float positions[], const float normals[] = nullptr, 
-		const float uvs[] = nullptr, const float triangleBounds[] = nullptr, 
-		const float ObjectToWorldMatrix[] = nullptr, int materialIndex = 0, 
-		int handedness = LEFT_HANDED, bool generateNormals = false);
-	TriangleMesh(int nTriangles,const int indices[], int nVertices, 
-		const Point3f positions[], const Normal3f normals[] = nullptr, 
-		const Vector2f uvs[] = nullptr, const Bounds3f triangleBounds[] = nullptr,
+	TriangleMesh(
+		int nTriangles, 
+		const int indices[], 
+		int nVertices,
+		const float positions[],
+		const float ObjectToWorldMatrix[] = nullptr,
+		const float normals[] = nullptr,
+		bool generateNormals = false,
+		const float uvs[] = nullptr, 
+		const float triangleBounds[] = nullptr, 
+		int materialIndex = 0, 
+		int handedness = LEFT_HANDED);
+	TriangleMesh(
+		int nTriangles,
+		const std::vector<int>& indices, 
+		int nVertices, 
+		const std::vector<Point3f>& positions,
+		const std::vector<Normal3f>& normals = std::vector<Normal3f>(),
+		bool generateNormals = false,
+		const std::vector<Vector2f>& uvs = std::vector<Vector2f>(),
+		const std::vector<Bounds3f>& triangleBounds = std::vector<Bounds3f>(),
 		const Transform ObjectToWorld = Transform::Identity(),
-		int materialIndex = 0, int handedness = LEFT_HANDED, 
-		bool generateNormals = false);
+		int materialIndex = 0,  
+		int handedness = LEFT_HANDED);
 	TriangleMesh(const TriangleMesh& mesh) = delete;
 	TriangleMesh& operator=(const TriangleMesh& mesh) = delete;
 	TriangleMesh(TriangleMesh&& mesh) noexcept = default;
@@ -59,9 +72,10 @@ public:
 	std::vector<Point3f> WorldSpacePositions() const;
 	std::vector<Normal3f> WorldSpaceNormals() const;
 	TriangleMesh& ChangeHandedness(int handedness);
-	static TriangleMesh ChangeHandedness(const TriangleMesh& mesh, int handedness);
 private:
 	void CalculateTriangleBounds();
+	void FlipWindingOrder();
+	void FlipZ();
 };
 
 #endif
