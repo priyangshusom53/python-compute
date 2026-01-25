@@ -13,6 +13,7 @@ template<typename T>
 struct Matrix4{
 	T elements[4][4];
 	CPU_GPU Matrix4();
+	CPU_GPU Matrix4(const T _elements[16]);
 	/*template<int N> CPU_GPU Matrix4(const T(&_r0)[N], const T(&_r1)[N], const T(&_r2)[N], const T(&_r3)[N]);*/
 	CPU_GPU static Matrix4<T> Identity();
 	CPU_GPU T Determinant() const;
@@ -52,6 +53,15 @@ CPU_GPU Matrix4<T>::Matrix4(){
 //		r3[i] = _r3[i];
 //	}
 //}
+
+template<typename T>
+CPU_GPU Matrix4<T>::Matrix4(const T _elements[16]) {
+	for (int i = 0; i < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			elements[i][j] = _elements[i * 4 + j];
+		}
+	}
+}
 
 template<typename T>
 CPU_GPU Matrix4<T> Matrix4<T>::Identity() {

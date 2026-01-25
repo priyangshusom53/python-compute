@@ -22,6 +22,9 @@ set(PROJECT_SOURCES
    src/bounds.cu
    src/matrix.h
    src/transformation.h
+   src/buffer.h
+   src/mesh.h
+   src/mesh.cpp
    src/utils.h
 )
 
