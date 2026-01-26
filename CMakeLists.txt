@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 project(python_raytracer LANGUAGES CXX)
 
-# ---- C++ standard ----
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ---- Python ----
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 
-# ---- pybind11 ----
 find_package(pybind11 REQUIRED)
 
 # c_python_types
@@ -34,6 +31,17 @@ pybind11_add_module(_aabb
 target_link_libraries(_aabb PRIVATE 
    pybind11::module 
    cpython)
+
+add_subdirectory(src/pathtracer ${CMAKE_BINARY_DIR}/pathtracer)
+pybind11_add_module(_pathtracer 
+   src/pathtracer/src/python_bindings.cpp
+)
+target_link_libraries(_pathtracer PRIVATE pybind11::module cpython)
+target_link_libraries(_pathtracer PRIVATE pathtracer)
+install(TARGETS _pathtracer 
+   LIBRARY DESTINATION src
+   RUNTIME DESTINATION src
+)
 
 # ---- Install into python package ----
 install(TARGETS _bvh _aabb

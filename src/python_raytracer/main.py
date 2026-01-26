@@ -5,9 +5,9 @@ import numpy as np
 
 from python_raytracer.core.log import logger
 from python_raytracer.core import debugging
-from python_raytracer.loader.gltf_loader import GLTFLoader
-from python_raytracer.core.geometry.transformation import Transform
-from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
+from python_raytracer.gltf_loader import GLTFLoader
+from python_raytracer.transformation import Transform
+from python_raytracer.triangle_mesh import TriangleMesh
 from python_raytracer.core.camera.simplecamera import (PerspectiveCamera,Film)
 from python_raytracer.pathtracer.pathtracer import PathTracer
 from python_raytracer.plots.o3dplots import plot_mesh_data

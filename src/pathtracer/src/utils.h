@@ -3,6 +3,13 @@
 
 #include "cudadefines.h"
 
+template <typename T>
+CPU_GPU void Swap(T& a, T& b) {
+	T temp = a;
+	a = b;
+	b = temp;
+}
+
 template<typename T>
 CPU_GPU T Sqr(T n) {
 	return n * n;

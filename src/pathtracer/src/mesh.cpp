@@ -6,13 +6,13 @@ TriangleMesh::TriangleMesh(
 	const int indices[],
 	int nVertices,
 	const float positions[],
-	const float ObjectToWorldMatrix[] = nullptr,
-	const float normals[] = nullptr,
-	bool generateNormals = false,
-	const float uvs[] = nullptr,
-	const float triangleBounds[] = nullptr,
-	int materialIndex = 0,
-	int handedness = LEFT_HANDED
+	const float ObjectToWorldMatrix[],
+	const float normals[],
+	bool generateNormals,
+	const float uvs[],
+	const float triangleBounds[],
+	int materialIndex,
+	int handedness
 ) {
 
 	
@@ -83,13 +83,13 @@ TriangleMesh::TriangleMesh(
 	const std::vector<int>& indices,
 	int nVertices,
 	const std::vector<Point3f>& positions,
-	const std::vector<Normal3f>& normals = std::vector<Normal3f>(),
-	bool generateNormals = false,
-	const std::vector<Vector2f>& uvs = std::vector<Vector2f>(),
-	const std::vector<Bounds3f>& triangleBounds = std::vector<Bounds3f>(),
-	const Transform ObjectToWorld = Transform::Identity(),
-	int materialIndex = 0,
-	int handedness = LEFT_HANDED) {
+	const std::vector<Normal3f>& normals,
+	bool generateNormals,
+	const std::vector<Vector2f>& uvs,
+	const std::vector<Bounds3f>& triangleBounds,
+	const Transform ObjectToWorld,
+	int materialIndex,
+	int handedness) {
 
 	this->handedness = handedness;
 	this->hasNormals = false;
@@ -260,9 +260,9 @@ void TriangleMesh::CalculateTriangleBounds() {
 	triangleBounds.clear();
 	triangleBounds.reserve(nTriangles);
 	for (int i = 0; i < nTriangles; ++i) {
-		const Point3f& p0 = positions[indices[3 * i]];
-		const Point3f& p1 = positions[indices[3 * i + 1]];
-		const Point3f& p2 = positions[indices[3 * i + 2]];
+		const Point3f& p0 = Point3f(ObjectToWorld.TransformPoint(positions[indices[3 * i]]));
+		const Point3f& p1 = Point3f(ObjectToWorld.TransformPoint(positions[indices[3 * i + 1]]));
+		const Point3f& p2 = Point3f(ObjectToWorld.TransformPoint(positions[indices[3 * i + 2]]));
 		Bounds3f b = Bounds3f::Union(Bounds3f::Union(Bounds3f(p0), p1), p2);
 		this->triangleBounds.push_back(b);
 	}

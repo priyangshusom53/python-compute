@@ -13,9 +13,9 @@ def json_loader(path:str):
 
 # GLTFLoader implementation
 from python_raytracer.loader.scene_loader import FLoader
-from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
+from python_raytracer.triangle_mesh import TriangleMesh
 from python_raytracer.core.material.pbr_material import PBRMaterial
-from python_raytracer.core.geometry.transformation import Transform
+from python_raytracer.transformation import Transform
 
 # trimesh types
 import trimesh 
@@ -30,7 +30,7 @@ import traceback
 from pathlib import Path
 from typing import Dict, Any
 
-class GLTFLoader(FLoader):
+class GLTFLoader:
     def load(self, path: str):
         '''
         convert to TriangleMesh arrays
