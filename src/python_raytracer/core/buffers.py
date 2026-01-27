@@ -3,7 +3,7 @@ from typing import Union
 
 import numpy as np
 
-from python_raytracer.core.geometry.transformation import Transform
+from python_raytracer.transformation import Transform
 
 class Vec3Buffer:
    """ uses numpy array with shape (N,3) and dtype=float32 as buffer for 3D vectors """

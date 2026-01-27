@@ -2,7 +2,7 @@
 import numpy as np
 import math
 
-from python_raytracer.core.geometry.transformation import Transform
+from python_raytracer.transformation import Transform
 from python_raytracer.core.math.quaternion import Quaternion
 
 class ScreenWindow:

@@ -6,10 +6,10 @@ from pathlib import Path
 
 from python_raytracer.core import debugging
 from python_raytracer.core.cuda_compute import CudaKernel 
-from python_raytracer.core.geometry.transformation import Transform
+from python_raytracer.transformation import Transform
 from python_raytracer.core.renderer.renderer import Renderer
 from python_raytracer.core.material.pbr_material import PBRMaterial
-from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
+from python_raytracer.triangle_mesh import TriangleMesh
 from python_raytracer.bvh import bvh
 from python_raytracer.core.camera.simplecamera import (PerspectiveCamera,Film)
 from python_raytracer.plots.imageplot import save_to_image

@@ -6,7 +6,7 @@
 #define CPU_ONLY __host__
 #define GPU_ONLY __device__
 
-#define CUDA_INLINE __inline__
+#define INLINE __inline__
 
 #define CUDA_ALIGN(n) __align__(n)
 #else 
@@ -14,8 +14,8 @@
 #define CPU_ONLY
 #define GPU_ONLY
 
-#define CUDA_INLINE 
-#define CUDA_ALIGN(n)
+#define INLINE inline
+#define CUDA_ALIGN(n) alignas(n)
 #endif
 
 #if defined(__CUDA_ARCH__)

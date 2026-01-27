@@ -8,7 +8,6 @@ TriangleMesh::TriangleMesh(
 	const float positions[],
 	const float ObjectToWorldMatrix[],
 	const float normals[],
-	bool generateNormals,
 	const float uvs[],
 	const float triangleBounds[],
 	int materialIndex,
@@ -17,7 +16,6 @@ TriangleMesh::TriangleMesh(
 
 	
 	this->handedness = handedness;
-	this->hasNormals = false;
 	this->hasTexCoords = false;
 	this->nTriangles = nTriangles;
 	this->indices.reserve((3 * nTriangles));
@@ -41,14 +39,10 @@ TriangleMesh::TriangleMesh(
 		for (int i = 0; i < 3 * nVertices; i += 3) {
 			this->normals.push_back(Normal3f(normals[i], normals[i + 1], normals[i + 2]));
 		}
-		this->hasNormals = true;
 	}
-	else if (generateNormals) {
+	else {
 		CalculateNormals();
-		this->hasNormals = true;
 	}
-	else
-		this->hasNormals = false;
 		
 	if(triangleBounds) {
 		this->triangleBounds.reserve(nTriangles);
@@ -84,7 +78,6 @@ TriangleMesh::TriangleMesh(
 	int nVertices,
 	const std::vector<Point3f>& positions,
 	const std::vector<Normal3f>& normals,
-	bool generateNormals,
 	const std::vector<Vector2f>& uvs,
 	const std::vector<Bounds3f>& triangleBounds,
 	const Transform ObjectToWorld,
@@ -92,7 +85,6 @@ TriangleMesh::TriangleMesh(
 	int handedness) {
 
 	this->handedness = handedness;
-	this->hasNormals = false;
 	this->hasTexCoords = false;
 	this->nTriangles = nTriangles;
 	this->indices.reserve((3 * nTriangles));
@@ -110,14 +102,11 @@ TriangleMesh::TriangleMesh(
 		for(int i = 0; i < nVertices; ++i) {
 			this->normals.push_back(normals[i]);
 		}
-		this->hasNormals = true;
 	}
-	else if (generateNormals) {
+	else {
 		CalculateNormals();
-		this->hasNormals = true;
 	}
-	else
-		this->hasNormals = false;
+
 	if (!triangleBounds.empty()) {
 		for(int i = 0; i < nTriangles; ++i) {
 			this->triangleBounds.push_back(triangleBounds[i]);
@@ -158,10 +147,6 @@ void TriangleMesh::SetPositions(int nVertices, const float positions[]) {
 	for(int i = 0; i < nVertices; ++i) {
 		this->positions[i] = Point3f(positions[3*i], positions[3*i + 1], positions[3*i + 2]);
 	}
-}
-
-bool TriangleMesh::HasNormals() const {
-	return this->hasNormals;
 }
 
 void TriangleMesh::CalculateNormals() {
@@ -277,8 +262,6 @@ void TriangleMesh::FlipWindingOrder() {
 void TriangleMesh::FlipZ() {
 	for (int i = 0; i < nVertices; ++i) {
 		positions[i].z = -positions[i].z;
-		if (this->hasNormals) {
-			normals[i].z = -normals[i].z;
-		}
+		normals[i].z = -normals[i].z;
 	}
 }

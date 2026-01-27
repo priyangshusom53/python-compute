@@ -10,7 +10,7 @@
 #include <cmath>
 
 template<typename T>
-struct Matrix4{
+struct CUDA_ALIGN(16) Matrix4{
 	T elements[4][4];
 	CPU_GPU Matrix4();
 	CPU_GPU Matrix4(const T _elements[16]);

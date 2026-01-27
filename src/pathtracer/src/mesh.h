@@ -20,7 +20,6 @@ public:
 	std::vector<int> indices;
 	int nVertices;
 	std::vector<Point3f> positions;
-	bool hasNormals;
 	std::vector<Normal3f> normals;
 	bool hasTexCoords;
 	std::vector<Vector2f> uvs;
@@ -35,7 +34,6 @@ public:
 		const float positions[],
 		const float ObjectToWorldMatrix[] = nullptr,
 		const float normals[] = nullptr,
-		bool generateNormals = false,
 		const float uvs[] = nullptr, 
 		const float triangleBounds[] = nullptr, 
 		int materialIndex = 0, 
@@ -46,7 +44,6 @@ public:
 		int nVertices, 
 		const std::vector<Point3f>& positions,
 		const std::vector<Normal3f>& normals = std::vector<Normal3f>(),
-		bool generateNormals = false,
 		const std::vector<Vector2f>& uvs = std::vector<Vector2f>(),
 		const std::vector<Bounds3f>& triangleBounds = std::vector<Bounds3f>(),
 		const Transform ObjectToWorld = Transform::Identity(),
@@ -58,7 +55,6 @@ public:
 	TriangleMesh& operator=(TriangleMesh&& mesh) noexcept = default;
 	void SetIndices(int nTriangles, const int indices[]);
 	void SetPositions(int nVertices, const float positions[]);
-	bool HasNormals() const;
 	void CalculateNormals();
 	void SetNormals(int nVertices, const float normals[]);
 	bool HasTextureCoords() const;
@@ -76,6 +72,16 @@ private:
 	void CalculateTriangleBounds();
 	void FlipWindingOrder();
 	void FlipZ();
+};
+
+struct CUDA_ALIGN(16) GPUTriangleMesh {
+	int nTriangles;
+	int firstTriangleIdx;
+	int nVertices;
+	int firstPositionIdx; 
+	Transform ObjectToWorld;
+	int materialIndex;
+	int pad[3];
 };
 
 #endif

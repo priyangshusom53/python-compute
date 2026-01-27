@@ -53,6 +53,8 @@ class TriangleMesh:
             self.hasTexCoords = False
         if triangleBounds is not None:
             self.triangleBounds = np.ascontiguousarray(triangleBounds, dtype=np.float32)
+        else:
+            self.triangleBounds = None
         self.materialIndex = materialIndex
         self.handedness = handedness
 
@@ -64,6 +66,35 @@ class TriangleMesh:
 
     def SetUVs(self, uvs:np.ndarray):
         self.uvs = np.ascontiguousarray(uvs, dtype=np.float32)
+
+class TriangleMesh4:
+    """
+    **TriangleMesh4** is for easy transformation modification,
+    DEBUG only
+    Contains:
+        ObjectToWorld: 4x4 matrix,\n
+        nTriangles: int,\n
+        indices: int32 array (nTriangles, 3),\n
+        nVertices: int,\n
+        positions: float32 array (nVertices, 4),\n
+        normals: float32 array (nVertices, 4),\n
+    """
+    __slots__ = [
+        'ObjectToWorld',
+        'nTriangles',
+        'indices',
+        'nVertices',
+        'positions',
+        'normals'
+    ]
+
+    def __init__(self,mesh:TriangleMesh):
+        self.ObjectToWorld = mesh.ObjectToWorldMatrix
+        self.nTriangles = mesh.nTriangles
+        self.indices = mesh.indices
+        self.nVertices = mesh.nVertices
+        self.positions = np.ascontiguousarray(np.concatenate([mesh.positions,np.ones((self.nVertices,1),dtype=np.float32)],axis=1),dtype=np.float32)
+        self.normals = np.ascontiguousarray(np.concatenate([mesh.normals,np.zeros((self.nVertices,1),dtype=np.float32)],axis=1),dtype=np.float32)
 
 
 

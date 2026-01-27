@@ -9,7 +9,7 @@
 #include <cuda/std/limits>
 #endif
 
-CPU_GPU inline float infinity_f() {
+CPU_GPU INLINE float infinity_f() {
 #ifdef __CUDA_ARCH__
     return __int_as_float(0x7f800000);
 #else
@@ -17,7 +17,7 @@ CPU_GPU inline float infinity_f() {
 #endif
 }
 
-CPU_GPU inline float max_f(){
+CPU_GPU INLINE float max_f(){
 #ifdef __CUDA_ARCH__
     return ::cuda::std::numeric_limits<float>::max();
 #else
@@ -25,7 +25,7 @@ CPU_GPU inline float max_f(){
 #endif
 }
 
-CPU_GPU inline float lowest_f(){
+CPU_GPU INLINE float lowest_f(){
 #ifdef __CUDA_ARCH__
     return ::cuda::std::numeric_limits<float>::lowest();
 #else

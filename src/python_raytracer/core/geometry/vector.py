@@ -2,7 +2,7 @@
 from typing import Union
 import numpy as np
 
-from .transformation import Transform
+from ...transformation import Transform
 
 
 class Vec4:

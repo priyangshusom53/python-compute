@@ -1,10 +1,10 @@
 import numpy as np
 import math
 from PIL import Image
-from python_raytracer.core.geometry.transformation import Transform
+from python_raytracer.transformation import Transform
 from python_raytracer.bvh.bvh import calculate_bvh
-from python_raytracer.loader.gltf_loader import GLTFLoader
-from python_raytracer.core.geometry.triangle_mesh import TriangleMesh
+from python_raytracer.gltf_loader import GLTFLoader
+from python_raytracer.triangle_mesh import TriangleMesh
 
 n = 1e-10
 f = 1000

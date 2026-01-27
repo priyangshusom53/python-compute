@@ -4,15 +4,15 @@ import numpy as np
 import vtk
 from vtkmodules.util import numpy_support
 
-from python_raytracer.core.geometry.triangle_mesh import(TriangleMesh)
-from python_raytracer.core.geometry.transformation import Transform
+from python_raytracer.triangle_mesh import(TriangleMesh, TriangleMesh4)
+from python_raytracer.transformation import Transform
 
 class Visualizer:
 
    __slots__ = ['vtk_renderer', 'vtk_interactor','vtk_render_window']
 
-   def __init__(self,meshes:list[TriangleMesh]):
-      world_positions3 = [(mesh.positions.array @ mesh.transform.matrix.T)[:,:3] for mesh in meshes]
+   def __init__(self,meshes:list[TriangleMesh4]):
+      world_positions3 = [(mesh.positions @ mesh.ObjectToWorld.T)[:,:3] for mesh in meshes]
       all_world_pos3 = np.concatenate(world_positions3,axis=0)
       vtk_points_data = numpy_support.numpy_to_vtk(
             all_world_pos3,
@@ -26,8 +26,8 @@ class Visualizer:
       indices = []
       vertex_offset:int = 0
       for mesh in meshes:
-         indices.append((mesh.vertex_indices + vertex_offset))
-         vertex_offset += mesh.n_vertices
+         indices.append((mesh.indices + vertex_offset))
+         vertex_offset += mesh.nVertices
       all_indices = np.concatenate(indices,axis=0)
       cell_counts = np.full((all_indices.shape[0],1),3)
       vtk_cells_data = numpy_support.numpy_to_vtkIdTypeArray(
@@ -37,7 +37,7 @@ class Visualizer:
       del all_indices
       del cell_counts
       vtk_cells = vtk.vtkCellArray()
-      vtk_cells.SetCells(mesh.n_triangles,vtk_cells_data)
+      vtk_cells.SetCells(mesh.nTriangles,vtk_cells_data)
 
       vtk_polydata = vtk.vtkPolyData()
       vtk_polydata.SetPoints(vtk_points)

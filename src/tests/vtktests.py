@@ -2,8 +2,8 @@ import numpy as np
 import vtk
 from vtkmodules.util import numpy_support
 
-from python_raytracer.loader.gltf_loader import GLTFLoader
-from python_raytracer.core.geometry.transformation import Transform
+from python_raytracer.gltf_loader import GLTFLoader
+from python_raytracer.transformation import Transform
 
 lh_to_rh_t = Transform.scale(1,1,-1)
 
