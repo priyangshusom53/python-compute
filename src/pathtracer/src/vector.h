@@ -74,6 +74,7 @@ struct Vector2{
 
 typedef Vector4<float> Vector4f;
 typedef Vector3<float> Vector3f;
+typedef Vector3<int> Vector3i;
 typedef Vector2<float> Vector2f;
 
 

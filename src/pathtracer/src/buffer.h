@@ -76,6 +76,7 @@ struct StructuredBufferView;
 
 template<typename SType, BufferType type>
 class StructuredBuffer {
+public:
 	void* data;
 	size_t length = 0;			// number of elements
 	size_t totalSize = 0;		// total size in bytes
@@ -85,7 +86,7 @@ class StructuredBuffer {
 	StructuredBuffer(size_t elemCount);
 	void Allocate();
 	SType& operator[](int idx);
-	SType operator[](int idx) const;
+	const SType& operator[](int idx) const;
 	StructuredBufferView<SType> View() const;
 	~StructuredBuffer();
 };
@@ -123,7 +124,11 @@ struct StructuredBufferView {
 	SType* data;
 	size_t length;
 
-	GPU_ONLY SType& operator[](int idx) {
+	CPU_GPU SType& operator[](int idx) {
+		return data[idx];
+	}
+
+	CPU_GPU const SType& operator[](int idx) const {
 		return data[idx];
 	}
 };
@@ -324,11 +329,20 @@ void StructuredBuffer<SType, type>::Allocate() {
 
 template<typename SType, BufferType type>
 SType& StructuredBuffer<SType, type>::operator[](int idx) {
+#ifdef DEBUG
+	if (idx<0 || idx>=length)
+		throw StructuredBufferRuntimeError("StructuredBuffer Error: Index out of bound");
+#endif
 	return *(static_cast<SType*>(data) + idx);
+
 }
 
 template<typename SType, BufferType type>
-SType StructuredBuffer<SType, type>::operator[](int idx) const {
+const SType& StructuredBuffer<SType, type>::operator[](int idx) const {
+#ifdef DEBUG
+	if (idx<0 || idx>=length)
+		throw StructuredBufferRuntimeError("StructuredBuffer Error: Index out of bound");
+#endif
 	return *(static_cast<SType*>(data) + idx);
 }
 

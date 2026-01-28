@@ -27,6 +27,8 @@ set(PROJECT_SOURCES
    src/mesh.cpp
    src/triangle.h
    src/bvh.h
+   src/bvh.cpp
+   src/interaction.h
    src/intersection.cu
    src/utils.h
 )

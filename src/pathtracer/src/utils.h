@@ -24,7 +24,7 @@ CPU_GPU T Pow(T n, int ex) {
 	return _n;
 }
 
-CPU_GPU float Lerp(float t, const float &p1, const float &p2){
+CPU_GPU INLINE float Lerp(float t, const float &p1, const float &p2){
    return (1-t) * p1 + t * p2;
 }
 
