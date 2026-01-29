@@ -36,6 +36,7 @@ struct Vector3
    CPU_GPU T LengthSquared() const;
    CPU_GPU T Length() const;
    CPU_GPU static Vector3<T> Normalize(const Vector3<T>&);
+   CPU_GPU static Vector3<T> Abs(const Vector3<T>&);
    CPU_GPU static T Dot(const Vector3<T> &v1, const Vector3<T> &v2);
    CPU_GPU static T AbsDot(const Vector3<T> &v1, const Vector3<T> &v2);
    CPU_GPU static Vector3<T> Cross(const Vector3<T> &v1, const Vector3<T> &v2);
@@ -192,6 +193,16 @@ template<typename T>
 CPU_GPU inline Vector3<T> Vector3<T>::Normalize(const Vector3<T> &v){
    T invL = T(1)/v.Length();
    return v * invL;
+}
+
+template<typename T>
+CPU_GPU Vector3<T> Vector3<T>::Abs(const Vector3<T>& v) {
+
+#ifdef __CUDA_ARCH__ 
+    return Vector3<T>(abs(v.x), abs(v.y), abs(v.z));
+#else
+    return Vector3<T>(std::abs(v.x), std::abs(v.y), std::abs(v.z));
+#endif
 }
 
 template<typename T>

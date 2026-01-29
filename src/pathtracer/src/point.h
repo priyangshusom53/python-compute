@@ -19,6 +19,7 @@ struct Point3{
    CPU_GPU T  operator[](int) const;
    CPU_GPU explicit Point3(const Point4<T>&);
    CPU_GPU explicit operator Point4<T>() const;
+   CPU_GPU explicit operator Vector3<T>() const;
    CPU_GPU Point3<T>& operator+=(const Vector3<T>& v);
    CPU_GPU Point3<T> operator+(const Vector3<T> &v) const;
    CPU_GPU Point3<T>& operator-=(const Vector3<T>& v);
@@ -85,6 +86,11 @@ CPU_GPU Point3<T>::Point3(const Point4<T>& p) : x(p.x), y(p.y), z(p.z) {}
 template<typename T>
 CPU_GPU Point3<T>::operator Point4<T>() const {
    return Point4<T>(x, y, z, 1);
+}
+
+template<typename T>
+CPU_GPU Point3<T>::operator Vector3<T>() const {
+	return Vector3<T>(x, y, z);
 }
 
 template<typename T>

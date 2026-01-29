@@ -29,7 +29,7 @@ set(PROJECT_SOURCES
    src/bvh.h
    src/bvh.cpp
    src/interaction.h
-   src/intersection.cu
+   src/soa.h
    src/utils.h
 )
 

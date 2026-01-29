@@ -4,16 +4,16 @@
 *	Make BVHTriangleInfo from Triangle array and call RecursiveBuild
 */
 BVHAccel::BVHAccel(
-	const std::vector<std::shared_ptr<Triangle>>& triangles,
+	const std::vector<Triangle>& triangles,
 	int maxTrisInNode, SplitMethod splitMethod) 
 	: maxTrisInNode(std::min(255, maxTrisInNode)), splitMethod(splitMethod), triangles(triangles) {
 
 	std::vector<BVHTriangleInfo> triangleInfos(triangles.size());
 	for (int i = 0; i < triangles.size(); ++i) {
-		triangleInfos[i] = { i, triangles[i]->worldBounds };
+		triangleInfos[i] = { i, triangles[i].worldBounds };
 	}
 	int totalNodes = 0;
-	std::vector<std::shared_ptr<Triangle>> orderedTriangles;
+	std::vector<Triangle> orderedTriangles;
 	std::vector<BVHBuildNode*> bvhNodes;
 	BVHBuildNode* root = RecusiveBuild(bvhNodes, triangleInfos, 0,
 		triangleInfos.size(), &totalNodes, orderedTriangles);
@@ -66,7 +66,7 @@ BVHBuildNode* BVHAccel::RecusiveBuild(
 	std::vector<BVHBuildNode*>& bvhNodes,
 	std::vector<BVHTriangleInfo>& triangleInfos,
 	int start, int end, int* totalNodes,
-	std::vector<std::shared_ptr<Triangle>>& orderedTriangles){
+	std::vector<Triangle>& orderedTriangles){
 	
 	BVHBuildNode* node = new BVHBuildNode();
 	bvhNodes.push_back(node);

@@ -76,18 +76,26 @@ struct StructuredBufferView;
 
 template<typename SType, BufferType type>
 class StructuredBuffer {
+	void* _data;
+	size_t _size = 0;			// number of elements currently stored
+	size_t _capacity = 0;		
 public:
-	void* data;
-	size_t length = 0;			// number of elements
-	size_t totalSize = 0;		// total size in bytes
-	size_t currentSize = 0;		// currently filled bytes
-	int bufferMemoryLocation = type;
 	StructuredBuffer();
 	StructuredBuffer(size_t elemCount);
-	void Allocate();
+	size_t size() const;
+	size_t capacity() const;
+	SType* data();
+	const SType* data() const;
+	void reserve(size_t size);
+	void push_back(const SType& elem);
+	void push_back(const SType&& elem);
+	void resize(size_t newElemCount);
+	void assign(SType* ptr, size_t count);
 	SType& operator[](int idx);
 	const SType& operator[](int idx) const;
 	StructuredBufferView<SType> View() const;
+	bool empty() const;
+	void clear();
 	~StructuredBuffer();
 };
 
@@ -293,6 +301,42 @@ AttributeBuffer<T, type>::~AttributeBuffer() {
 		}
 	}
 }
+
+#pragma region StructuredBuffer DEFINITION
+template<typename SType, BufferType type>
+StructuredBuffer<SType, type>::StructuredBuffer() : _data(nullptr), _size(0),_capacity(0)  {}
+
+template<typename SType, BufferType type>
+StructuredBuffer<SType, type>::StructuredBuffer(size_t elemCount) : _data(nullptr), _size(0), _capacity(elemCount){
+	
+}
+
+template<typename SType, BufferType type>
+void StructuredBuffer<SType, type>::reserve(size_t size) {
+	size_t size = length * sizeof(SType);
+	if (type == BufferType::CPU_BUFFER) {
+		data = std::malloc(size);
+		if (data == nullptr) {
+			throw StructuredBufferRuntimeError(
+				std::string("StructuredBuffer Error: Failed to allocate CPU buffer of size=") +=
+				std::to_string(size)
+			);
+		}
+		totalSize = size;
+	}
+	else if (type == BufferType::GPU_BUFFER) {
+		cudaError_t error = cudaMalloc(&data, size);
+		if (error != cudaSuccess) {
+			throw StructuredBufferRuntimeError(
+				std::string("StructuredBuffer Error: Failed to allocate GPU buffer of size=") +=
+				std::to_string(size) +
+				std::string(", CUDA error: ") + std::string(cudaGetErrorString(error))
+			);
+		}
+		totalSize = size;
+	}
+}
+#pragma endregion
 
 // StructedBuffer definition
 template<typename SType, BufferType type>

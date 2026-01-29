@@ -19,6 +19,7 @@ struct BVHTriangleInfo {
 	int triangleNumber;
 	Bounds3f bounds;
 	Point3f centroid;
+	BVHTriangleInfo() = default;
 	BVHTriangleInfo(int triangleNumber, Bounds3f bounds)
 		: triangleNumber(triangleNumber), bounds(bounds),
 		centroid((bounds.pMin + bounds.pMax)*0.5f) {}
@@ -55,20 +56,20 @@ struct LinearBVHNode {
 class BVHAccel {
 	const int maxTrisInNode;
 	const SplitMethod splitMethod;
-	std::vector<std::shared_ptr<Triangle>> triangles;
+	std::vector<Triangle> triangles;
 	StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER> nodes;
 public:
-	BVHAccel(const std::vector<std::shared_ptr<Triangle>>& triangles, 
+	BVHAccel(const std::vector<Triangle>& triangles, 
 		int maxTrisInNode, SplitMethod splitMethod = SplitMethod::SAH);
 	BVHBuildNode* RecusiveBuild(
 		std::vector<BVHBuildNode*>& bvhNodes,
 		std::vector<BVHTriangleInfo>& triangleInfos,
 		int start, int end, int *totalNodes,
-		std::vector<std::shared_ptr<Triangle>>& orderedTriangles);
+		std::vector<Triangle>& orderedTriangles);
 	int FlattenBVHTree(BVHBuildNode* node, int *offset);
 };
 
-CPU_GPU INLINE bool IntersectBVH(const Ray& ray, 
+CPU_GPU INLINE bool IntersectBVH(Ray& ray, 
 	const StructuredBufferView<LinearBVHNode>& linearNodes,
 	const StructuredBufferView<Triangle>& orderedTriangles,
 	const StructuredBufferView<GPUTriangleMesh>& meshes,
@@ -91,6 +92,7 @@ CPU_GPU INLINE bool IntersectBVH(const Ray& ray,
 				int nTriangles = node->nTriangles;
 				for (int i = offset; i < offset + nTriangles; ++i) {
 					if (orderedTriangles[i].Intersect(
+						ray,
 						meshes,
 						indexBuffer,
 						positions,

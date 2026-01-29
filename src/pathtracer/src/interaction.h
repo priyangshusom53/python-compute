@@ -4,11 +4,12 @@
 #include "cudadefines.h"
 #include "vector.h"
 #include "point.h"
+#include "normal.h"
 
 struct CUDA_ALIGN(16) SurfaceInteraction
 {
-	Vector3f p;
-	Vector3f n;
+	Point3f p;
+	Normal3f n;
 	Vector2f uv;
 	Vector3f dpdu, dpdv;
 	int pad[2];
