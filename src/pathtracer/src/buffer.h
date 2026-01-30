@@ -97,36 +97,41 @@ public:
 	bool empty() const;
 	void clear();
 	~StructuredBuffer();
+	static_assert(
+		std::is_move_constructible_v<SType>,
+		"StructuredBuffer requires move-constructible types"
+		);
+	static_assert(
+		std::is_trivially_copyable_v<SType>,
+		"GPU StructuredBuffer only supports trivially copyable types"
+		);
 };
 
 
 template<typename SType>
-void CopyData(
+void push_back_array(
 	const StructuredBuffer<SType, BufferType::CPU_BUFFER>& src,
 	StructuredBuffer<SType, BufferType::CPU_BUFFER>& dst,
-	size_t start,
+	size_t start,	// starting index in src buffer
 	size_t nElement
 );
 
 template<typename SType>
 void CopyData(
 	const StructuredBuffer<SType, BufferType::GPU_BUFFER>& src,
-	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst,
-	size_t nElements
+	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst
 );
 
 template<typename SType>
 void CopyData(
 	const StructuredBuffer<SType, BufferType::CPU_BUFFER>& src,
-	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst,
-	size_t nElements
+	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst
 );
 
 template<typename SType>
 void CopyData(
 	const StructuredBuffer<SType, BufferType::GPU_BUFFER>& src,
-	StructuredBuffer<SType, BufferType::CPU_BUFFER>& dst,
-	size_t nElements
+	StructuredBuffer<SType, BufferType::CPU_BUFFER>& dst
 );
 
 template<typename SType>
@@ -305,6 +310,7 @@ AttributeBuffer<T, type>::~AttributeBuffer() {
 }
 
 #pragma region StructuredBuffer DEFINITION
+
 template<typename SType, BufferType type>
 StructuredBuffer<SType, type>::StructuredBuffer() : _data(nullptr), _size(0),_capacity(0)  {}
 
@@ -348,64 +354,75 @@ const SType* StructuredBuffer<SType, type>::data() const {
 }
 
 template<typename SType, BufferType type>
-void StructuredBuffer<SType, type>::reserve(size_t size) {
+void StructuredBuffer<SType, type>::reserve(size_t newCapacity) {
 	
+	if (newCapacity <= _capacity)
+		return;
+
 	if (type == BufferType::CPU_BUFFER) {
-		void* data = std::malloc(size * sizeof(SType));
+		void* data = std::malloc(newCapacity * sizeof(SType));
 		if (data == nullptr) {
 			throw StructuredBufferRuntimeError(
 				std::string("StructuredBuffer Error: Failed to allocate CPU buffer of size=") +=
-				std::to_string(size)
+				std::to_string(newCapacity)
 			);
 		}
-		_capacity = size;
-		size_t _sizeToCopy = std::min(_capacity, _size);
+		size_t _sizeToCopy = _size;
 		if (_data != nullptr) {
-			std::memcpy(data, _data, _sizeToCopy * sizeof(SType));
+			if(std::is_trivially_copyable_v<SType>)
+				std::memcpy(data, _data, _sizeToCopy * sizeof(SType));
+			else {
+				SType* _tdata = static_cast<SType*>(_data);
+				SType* tdata = static_cast<SType*>(data);
+				for (int i = 0; i < _sizeToCopy; ++i) {
+					new (&tdata[i]) SType(std::move(_tdata[i]));
+					_tdata[i].~SType();
+				}
+			}
 			std::free(_data);
 		}
 		_data = data;
-		_size = _sizeToCopy;
+		_capacity = newCapacity;
 	}
 	else if (type == BufferType::GPU_BUFFER) {
 		void* data;
-		cudaError_t error = cudaMalloc(&data, size * sizeof(SType));
+		cudaError_t error = cudaMalloc(&data, newCapacity * sizeof(SType));
 		if (error != cudaSuccess) {
 			throw StructuredBufferRuntimeError(
 				std::string("StructuredBuffer Error: Failed to allocate GPU buffer of size=") +=
-				std::to_string(size) +
+				std::to_string(newCapacity) +
 				std::string(", CUDA error: ") + std::string(cudaGetErrorString(error))
 			);
 		}
-		_capacity = size;
-		size_t _sizeToCopy = std::min(_capacity, _size);
+		size_t _sizeToCopy = _size;
 		if (_data != nullptr) {
 			error = cudaMemcpy(data, _data, _sizeToCopy * sizeof(SType), cudaMemcpyDeviceToDevice);
 			if (error != cudaSuccess) {
+				cudaFree(data);
 				throw StructuredBufferRuntimeError(
-					std::string("StructuredBuffer Error: Failed to allocate GPU buffer of size=") +=
-					std::to_string(size) +
+					std::string("StructuredBuffer Error: Failed to copy GPU buffer of size=") +=
+					std::to_string(_sizeToCopy) +
 					std::string(", CUDA error: ") + std::string(cudaGetErrorString(error))
 				);
 			}
 			cudaFree(_data);
 		}
 		_data = data;
-		_size = _sizeToCopy;
+		_capacity = newCapacity;
 	}
 }
 
 template<typename SType, BufferType type>
 void StructuredBuffer<SType, type>::push_back(const SType& elem) {
 	if (type == BufferType::CPU_BUFFER) {
-		if ((_capacity - _size) > 0) {
-			static_cast<SType*>(_data)[_size++] = elem;
+		if (_size == _capacity) {
+			size_t newCap = (_capacity == 0) ? 2 : _capacity * 2;
+			reserve(newCap);
 		}
-		else {
-			size_t size = 1;
-			reserve(2 * (std::max(size, _size)));
-			static_cast<SType*>(_data)[_size++] = elem;
-		}
+
+		SType* data = static_cast<SType*>(_data);
+		new (&data[_size]) SType(elem); 
+		++_size;
 	}
 	else if (type == BufferType::GPU_BUFFER) {
 		throw StructuredBufferRuntimeError("StructuredBuffer Error: push_back not available for GPU memory");
@@ -415,14 +432,14 @@ void StructuredBuffer<SType, type>::push_back(const SType& elem) {
 template<typename SType, BufferType type>
 void StructuredBuffer<SType, type>::push_back(SType&& elem) {
 	if (type == BufferType::CPU_BUFFER) {
-		if ((_capacity - _size) > 0) {
-			static_cast<SType*>(_data)[_size++] = elem;
+		if (_size == _capacity) {
+			size_t newCap = (_capacity == 0) ? 2 : _capacity * 2;
+			reserve(newCap);
 		}
-		else {
-			size_t size = 1;
-			reserve(2 * (std::max(size, _size)));
-			static_cast<SType*>(_data)[_size++] = elem;
-		}
+
+		SType* data = static_cast<SType*>(_data);
+		new (&data[_size]) SType(std::move(elem));
+		++_size;
 	}
 	else if (type == BufferType::GPU_BUFFER) {
 		throw StructuredBufferRuntimeError("StructuredBuffer Error: push_back not available for GPU memory");
@@ -432,27 +449,44 @@ void StructuredBuffer<SType, type>::push_back(SType&& elem) {
 template<typename SType, BufferType type>
 void StructuredBuffer<SType, type>::resize(size_t newSize) {
 	if (type == BufferType::CPU_BUFFER) {
-		if (newSize <= _capacity) {
-			if (_size > newSize) {
-				_size = newSize;
+		SType* data = static_cast<SType*>(_data);
+		if (newSize < _size) {
+			for (size_t i = newSize; i < _size; ++i) {
+				data[i].~SType();
 			}
-			else {
-				for (int i = _size; i < newSize; ++i)
-					static_cast<SType*>(_data)[i] = SType();
-			}
-		}
-		else {
-			_capacity = newSize;
-			void* data = std::malloc(_capacity * sizeof(SType));
-			if (_data != nullptr) {
-				std::memcpy(data, _data, _size * sizeof(SType));
-				std::free(_data);
-			}
-			for (int i = _size; i < newSize; ++i)
-				static_cast<SType*>(data)[i] = SType();
-			_data = data;
 			_size = newSize;
+			return;
 		}
+		if (newSize <= _capacity) {
+			for (size_t i = _size; i < newSize; ++i) {
+				new (&data[i]) SType();
+			}
+			_size = newSize;
+			return;
+		}
+		size_t newCapacity = newSize;
+		SType* newData = static_cast<SType*>(
+			std::malloc(newCapacity * sizeof(SType))
+			);
+		if (!newData) {
+			throw StructuredBufferRuntimeError("Allocation failed");
+		}
+
+		// MOVE-construct old elements
+		for (size_t i = 0; i < _size; ++i) {
+			new (&newData[i]) SType(std::move(data[i]));
+			data[i].~SType();
+		}
+
+		// Default-construct new elements
+		for (size_t i = _size; i < newSize; ++i) {
+			new (&newData[i]) SType();
+		}
+
+		std::free(_data);
+		_data = (void*)newData;
+		_capacity = newCapacity;
+		_size = newSize;
 		
 	}
 	else if (type == BufferType::GPU_BUFFER) {
@@ -463,11 +497,8 @@ void StructuredBuffer<SType, type>::resize(size_t newSize) {
 template<typename SType, BufferType type>
 void StructuredBuffer<SType, type>::assign(SType* ptr, size_t count) {
 	if (type == BufferType::CPU_BUFFER) {
-		if (_data != nullptr) {
-			std::free(_data);
-			_size = 0;
-			_capacity = 0;
-		}
+		clear();
+		std::free(_data);
 		_data = static_cast<void*>(ptr);
 		_size = count;
 		_capacity = count;
@@ -526,7 +557,7 @@ void StructuredBuffer<SType, type>::clear() {
 		if (_data != nullptr) {
 			SType* data = static_cast<SType*>(_data);
 			for (int i = 0; i < _size; ++i) {
-				(&data[i])->~SType();
+				data[i].~SType();
 			}
 		}
 		_size = 0;
@@ -554,105 +585,94 @@ StructuredBuffer<SType, type>::~StructuredBuffer() {
 }
 
 template<typename SType>
-void CopyData(
+void push_back_array(
 	const StructuredBuffer<SType, BufferType::CPU_BUFFER>& src,
 	StructuredBuffer<SType, BufferType::CPU_BUFFER>& dst,
 	size_t start,
 	size_t nElements
 ) {
-	size_t bytes = nElements * sizeof(SType);
-	if (nElements > dst.capacity() - dst.size()) {
-		throw StructuredBufferRuntimeError(
-			"StructuredBuffer Error: Not enough space in destination CPU buffer" +
-			std::string(", requested count ") + std::to_string(nElements) +
-			std::string(", available count ") + std::to_string(dst.capacity() - dst.size())
-		);
+	if (start + nElements > src.size()) {
+		throw StructuredBufferRuntimeError("Source range out of bounds");
 	}
-	size_t _sizeToCopy = nElements;
-	SType* dstPtr = &dst[0] + dst.size();
-	SType* srcPtr = &dst[0] + start;
-	std::memcpy((void*)dstPtr, (void*)srcPtr, _sizeToCopy*sizeof(SType));
+
+	size_t oldSize = dst.size();
+	dst.resize(oldSize + nElements);
+
+	SType* dstPtr = dst.data() + oldSize;
+	const SType* srcPtr = src.data() + start;
+
+	if constexpr (std::is_trivially_copyable_v<SType>) {
+		std::memcpy(dstPtr, srcPtr, nElements * sizeof(SType));
+	}
+	else {
+		for (size_t i = 0; i < nElements; ++i) {
+			new (&dstPtr[i]) SType(srcPtr[i]); // copy construct
+		}
+	}
 }
 
 template<typename SType>
 void CopyData(
 	const StructuredBuffer<SType, BufferType::GPU_BUFFER>& src,
-	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst,
-	size_t nElements
+	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst
 ) {
-	size_t bytes = nElements * sizeof(SType);
-	if (bytes > dst.totalSize - dst.currentSize) {
-		throw StructuredBufferRuntimeError(
-			"StructuredBuffer Error: Not enough space in destination GPU buffer" +
-			std::string(", requested ") + std::to_string(bytes) +
-			std::string(", available ") + std::to_string(dst.totalSize - dst.currentSize)
-		);
+	if (src.size() != dst.size()) {
+		throw StructuredBufferRuntimeError("StructuredBuffer Error: GPU src and dst buffer size must be same for copying");
 	}
-	char* dstPtr = static_cast<char*>(dst.data) + dst.currentSize;
-	cudaError_t error = cudaMemcpy((void*)dstPtr, src.data, bytes, cudaMemcpyDeviceToDevice);
+	const SType* d_srcPtr = src.data();
+	SType* d_dstPtr = dst.data();
+	cudaError_t error = cudaMemcpy((void*)d_dstPtr, (void*)d_srcPtr, (src.size()) * sizeof(SType), cudaMemcpyDeviceToDevice);
 	if (error != cudaSuccess) {
 		throw StructuredBufferRuntimeError(
 			"StructuredBuffer Error: Failed to copy GPU to GPU buffer of size=" +
-			std::to_string(bytes) +
+			std::to_string(src.size()) +
 			", CUDA error: " +
 			std::string(cudaGetErrorString(error))
 		);
 	}
-	dst.currentSize += bytes;
 }
 
 template<typename SType>
 void CopyData(
 	const StructuredBuffer<SType, BufferType::CPU_BUFFER>& src,
-	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst,
-	size_t nElements
+	StructuredBuffer<SType, BufferType::GPU_BUFFER>& dst
 ) {
-	size_t bytes = nElements * sizeof(SType);
-	if (bytes > dst.totalSize - dst.currentSize) {
-		throw StructuredBufferRuntimeError(
-			"StructuredBuffer Error: Not enough space in destination GPU buffer" +
-			std::string(", requested ") + std::to_string(bytes) +
-			std::string(", available ") + std::to_string(dst.totalSize - dst.currentSize)
-		);
+	if (src.size() != dst.size()) {
+		throw StructuredBufferRuntimeError("StructuredBuffer Error: CPU src and GPU dst buffer size must be same for copying");
 	}
-	char* dstPtr = static_cast<char*>(dst.data) + dst.currentSize;
-	cudaError_t error = cudaMemcpy((void*)dstPtr, src.data, bytes, cudaMemcpyHostToDevice);
+	const SType* srcPtr = &src[0];
+	SType* d_dstPtr = dst.data();
+	cudaError_t error = cudaMemcpy((void*)d_dstPtr, (void*)srcPtr, (src.size()) * sizeof(SType), cudaMemcpyHostToDevice);
 	if (error != cudaSuccess) {
 		throw StructuredBufferRuntimeError(
 			"StructuredBuffer Error: Failed to copy CPU to GPU buffer of size=" +
-			std::to_string(bytes) +
+			std::to_string(src.size()) +
 			", CUDA error: " +
 			std::string(cudaGetErrorString(error))
 		);
 	}
-	dst.currentSize += bytes;
 }
 
 template<typename SType>
 void CopyData(
 	const StructuredBuffer<SType, BufferType::GPU_BUFFER>& src,
 	StructuredBuffer<SType, BufferType::CPU_BUFFER>& dst,
-	size_t nElements
+	size_t nElement
 ) {
-	size_t bytes = nElements * sizeof(SType);
-	if (bytes > dst.totalSize - dst.currentSize) {
-		throw StructuredBufferRuntimeError(
-			"StructuredBuffer Error: Not enough space in destination CPU buffer" +
-			std::string(", requested ") + std::to_string(bytes) +
-			std::string(", available ") + std::to_string(dst.totalSize - dst.currentSize)
-		);
+	if (src.size() != dst.size()) {
+		throw StructuredBufferRuntimeError("StructuredBuffer Error: GPU src and CPU dst buffer size must be same for copying");
 	}
-	char* dstPtr = static_cast<char*>(dst.data) + dst.currentSize;
-	cudaError_t error = cudaMemcpy((void*)dstPtr, src.data, bytes, cudaMemcpyDeviceToHost);
+	const SType* d_srcPtr = src.data();
+	SType* dstPtr = &dst[0];
+	cudaError_t error = cudaMemcpy((void*)dstPtr, (void*)d_srcPtr, (src.size()) * sizeof(SType), cudaMemcpyDeviceToHost);
 	if (error != cudaSuccess) {
 		throw StructuredBufferRuntimeError(
 			"StructuredBuffer Error: Failed to copy GPU to CPU buffer of size=" +
-			std::to_string(bytes) +
+			std::to_string(src.size()) +
 			", CUDA error: " +
 			std::string(cudaGetErrorString(error))
 		);
 	}
-	dst.currentSize += bytes;
 }
 
 #pragma endregion

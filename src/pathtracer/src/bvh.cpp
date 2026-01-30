@@ -21,7 +21,6 @@ BVHAccel::BVHAccel(
 
 	nodes = 
 		StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER>(totalNodes);
-	nodes.Allocate();
 	int offset = 0;
 	FlattenBVHTree(root, &offset);
 }
