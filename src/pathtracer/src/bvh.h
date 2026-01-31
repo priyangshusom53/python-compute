@@ -56,16 +56,16 @@ struct LinearBVHNode {
 class BVHAccel {
 	const int maxTrisInNode;
 	const SplitMethod splitMethod;
-	std::vector<Triangle> triangles;
+	std::vector<std::shared_ptr<Triangle>> triangles;
 	StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER> nodes;
 public:
-	BVHAccel(const std::vector<Triangle>& triangles, 
+	BVHAccel(const std::vector<std::shared_ptr<Triangle>>& triangles, 
 		int maxTrisInNode, SplitMethod splitMethod = SplitMethod::SAH);
 	BVHBuildNode* RecusiveBuild(
 		std::vector<BVHBuildNode*>& bvhNodes,
 		std::vector<BVHTriangleInfo>& triangleInfos,
 		int start, int end, int *totalNodes,
-		std::vector<Triangle>& orderedTriangles);
+		std::vector<std::shared_ptr<Triangle>>& orderedTriangles);
 	int FlattenBVHTree(BVHBuildNode* node, int *offset);
 };
 

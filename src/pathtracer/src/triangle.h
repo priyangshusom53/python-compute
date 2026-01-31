@@ -1,7 +1,12 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
+#include "buffer.h"
 #include "cudadefines.h"
+#include "vector.h"
+#include "point.h"
+#include "normal.h"
+#include "bounds.h"
 #include "mesh.h"
 #include "interaction.h"
 
@@ -66,7 +71,7 @@ CPU_GPU INLINE bool Triangle::Intersect(
 ) const {
 
 	const Vector3i& indices = 
-		indexBuffer[meshes[meshIdx].firstPositionIdx+triangleIdx];
+		indexBuffer[meshes[meshIdx].firstTriangleIdx+triangleIdx];
 	const Point3f& p0 = positions[indices.x];
 	const Point3f& p1 = positions[indices.y];
 	const Point3f& p2 = positions[indices.z];

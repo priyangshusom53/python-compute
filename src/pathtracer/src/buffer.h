@@ -101,10 +101,6 @@ public:
 		std::is_move_constructible_v<SType>,
 		"StructuredBuffer requires move-constructible types"
 		);
-	static_assert(
-		std::is_trivially_copyable_v<SType>,
-		"GPU StructuredBuffer only supports trivially copyable types"
-		);
 };
 
 

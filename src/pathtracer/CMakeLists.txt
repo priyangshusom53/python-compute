@@ -56,3 +56,7 @@ foreach(debug_flag IN ITEMS ${CUDA_FLAGS_DEBUG})
 endforeach()
 
 target_compile_definitions(pathtracer PRIVATE "$<$<CONFIG:DEBUG>:DEBUG>")
+
+find_package(CUDAToolkit REQUIRED)
+
+target_link_libraries(pathtracer PUBLIC CUDA::cudart)

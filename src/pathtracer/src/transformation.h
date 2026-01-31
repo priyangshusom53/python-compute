@@ -185,7 +185,7 @@ CPU_GPU INLINE Bounds3f Transform::TransformBounds(const Bounds3f& b) const {
 	return ret;
 }
 
-CPU_GPU Ray Transform::TransformRay(const Ray& r)const {
+CPU_GPU INLINE Ray Transform::TransformRay(const Ray& r)const {
 	const Transform& t = *this;
 	Ray _r;
 	_r.o = Point3f(t.TransformPoint(r.o));
@@ -195,7 +195,7 @@ CPU_GPU Ray Transform::TransformRay(const Ray& r)const {
 	return _r;
 }
 
-CPU_GPU Transform Transform::InverseTransform() const {
+CPU_GPU INLINE Transform Transform::InverseTransform() const {
 	Transform _t;
 	_t.matrix = invMatrix;
 	_t.invMatrix = matrix;
