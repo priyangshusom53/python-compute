@@ -8,6 +8,7 @@
 #include "normal.h"
 #include "triangle.h"
 #include "mesh.h"
+#include "bvh.h"
 
 #include<vector>
 #include<memory>
@@ -19,13 +20,16 @@ struct SOA {
 	StructuredBuffer<Vector2f, BufferType::CPU_BUFFER> uvs;
 	StructuredBuffer<Triangle, BufferType::CPU_BUFFER> triangles;
 	StructuredBuffer<GPUTriangleMesh, BufferType::CPU_BUFFER> meshes;
+	StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER> nodes;
 
 	SOA(const std::vector<TriangleMesh>& triangleMeshes,
-		const std::vector<std::shared_ptr<Triangle>>& triangles);
+		const std::vector<std::shared_ptr<Triangle>>& triangles,
+		const StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER>& linearNodes);
 };
 
 INLINE SOA::SOA(const std::vector<TriangleMesh>& triMeshes, 
-	const std::vector<std::shared_ptr<Triangle>>& triangles) {
+	const std::vector<std::shared_ptr<Triangle>>& _triangles,
+	const StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER>& linearNodes) {
 	int nMeshes = triMeshes.size();
 	if (nMeshes == 0)
 		return;
@@ -95,6 +99,17 @@ INLINE SOA::SOA(const std::vector<TriangleMesh>& triMeshes,
 				uvs[UVOffset + j] = triMesh.uvs[j];
 			UVOffset += triMesh.nVertices;
 		}
+	}
+
+	triangles = StructuredBuffer<Triangle, BufferType::CPU_BUFFER>(_triangles.size());
+	for (int i = 0; i < triangles.size(); ++i) {
+		triangles[i] = 
+			Triangle(_triangles[i]->meshIdx, _triangles[i]->triangleIdx, _triangles[i]->worldBounds);
+	}
+
+	StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER>(linearNodes.size());
+	for (int i = 0; i < nodes.size(); ++i) {
+		nodes[i] = linearNodes[i];
 	}
 }
 

@@ -9,6 +9,7 @@
 #include "transformation.h"
 #include "mesh.h"
 #include "bvh.h"
+#include "soa.h"
 
 #include<vector>
 #include <stdexcept>
@@ -28,27 +29,28 @@ static std::vector<Bounds3f> to_bounds3f_array(py::array_t<float>& np_array);
 
 static TriangleMesh MakeTriangleMesh(
 	int nTriangles,
-	std::vector<int> indices,
+	const std::vector<Vector3i>& indices,
 	int nVertices,
-	std::vector<Point3f> positions,
-	std::vector<Normal3f> normals,
-	std::vector<Vector2f> uv,
-	std::vector<Bounds3f> triBounds,
-	Transform ObjectToWorld,
-	int materialIdx,
-	int handedness
+	const std::vector<Point3f>& positions,
+	const Transform& ObjectToWorld = Transform::Identity(),
+	int handedness = LEFT_HANDED,
+	bool calculateNormals = false,
+	const std::vector<Normal3f>& normals = std::vector<Normal3f>(),
+	const std::vector<Vector2f>& uvs = std::vector<Vector2f>(),
+	int materialIndex = 0
 ) {
 	TriangleMesh mesh = TriangleMesh(
 		nTriangles,
 		indices,
 		nVertices,
 		positions,
-		normals,
-		uv,
-		triBounds,
 		ObjectToWorld,
-		materialIdx,
-		handedness);
+		handedness,
+		calculateNormals,
+		normals,
+		uvs,
+		materialIndex
+	);
 
 	return mesh;
 }
@@ -170,19 +172,42 @@ void bind_transform(py::module_& m) {
 void bind_mesh(py::module_& m) {
 	py::class_<TriangleMesh>(m, "TriangleMesh")
 		.def(py::init(&MakeTriangleMesh))
-		.def("SetPositions", &TriangleMesh::SetPositions)
+		.def("HasNormals", &TriangleMesh::HasNormals)
 		.def("SetNormals", &TriangleMesh::SetNormals)
 		.def("SetTextureCoords", &TriangleMesh::SetTextureCoords)
 		.def("HasTextureCoords", &TriangleMesh::HasTextureCoords)
 		.def("SetTransform", &TriangleMesh::SetTransform)
 		.def("TransformMeshObjectSpace", &TriangleMesh::TransformMeshObjectSpace)
 		.def("TransformMeshWorldSpace", &TriangleMesh::TransformMeshWorldSpace);
+
+	m.def("GetTriangles", &GetTriangles);
 }
 
 void bind_bvh(py::module_& m) {
 	py::class_<BVHAccel>(m, "BVHAccel")
-		.def(py::init<std::vector<Triangle>,
-			int, SplitMethod>());
+		.def(py::init<
+			std::vector<std::shared_ptr<Triangle>>,
+			int,
+			SplitMethod>()
+		)
+		.def_readonly("triangles", &BVHAccel::triangles)
+		.def_readonly("linearNodes", &BVHAccel::nodes);
+}
+
+void bind_soa(py::module_& m) {
+	py::class_<SOA>(m, "SOA")
+		.def(py::init<
+			std::vector<TriangleMesh>&,
+			std::vector<std::shared_ptr<Triangle>>&,
+			StructuredBuffer<LinearBVHNode, BufferType::CPU_BUFFER>&>()
+		)
+		.def_readonly("indices", &SOA::indices)
+		.def_readonly("positions", &SOA::positions)
+		.def_readonly("normals", &SOA::normals)
+		.def_readonly("uvs", &SOA::uvs)
+		.def_readonly("triangles", &SOA::triangles)
+		.def_readonly("gpuMeshes", &SOA::meshes)
+		.def_readonly("nodes", &SOA::nodes);
 }
 
 PYBIND11_MODULE(pathtracer, m) {
@@ -194,5 +219,11 @@ PYBIND11_MODULE(pathtracer, m) {
 
 	auto m_mesh = m.def_submodule("mesh", "Mesh data structures");
 	bind_mesh(m_mesh);
+
+	auto m_bvh = m.def_submodule("accels");
+	bind_bvh(m_bvh);
+
+	auto m_soa = m.def_submodule("soa", "Creates SOA for GPU upload");
+	bind_soa(m_soa);
 }
 

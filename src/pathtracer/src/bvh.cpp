@@ -1,5 +1,23 @@
 #include "bvh.h"
 
+
+std::vector<std::shared_ptr<Triangle>> GetTriangles(const std::vector<TriangleMesh>& meshes) {
+	int nMeshes = meshes.size();
+	int nTriangles = 0;
+	for (int i = 0; i < nMeshes; ++i)
+		nTriangles += meshes[i].nTriangles;
+	std::vector<std::shared_ptr<Triangle>> triangles(nTriangles);
+	int triNumber = 0;
+	for (int i = 0; i < nMeshes; ++i) {
+		std::vector<Bounds3f> worldBounds = meshes[i].GetTriangleWorldBounds();
+		for (int j = 0; j < meshes[i].nTriangles; ++j) {
+			triangles[triNumber + j] = std::make_shared<Triangle>(i, j, worldBounds[j]);
+		}
+		triNumber += meshes[i].nTriangles;
+	}
+	return triangles;
+}
+
 /*
 *	Make BVHTriangleInfo from Triangle array and call RecursiveBuild
 */
@@ -65,7 +83,7 @@ BVHBuildNode* BVHAccel::RecusiveBuild(
 	std::vector<BVHBuildNode*>& bvhNodes,
 	std::vector<BVHTriangleInfo>& triangleInfos,
 	int start, int end, int* totalNodes,
-	std::vector<Triangle>& orderedTriangles){
+	std::vector<std::shared_ptr<Triangle>>& orderedTriangles){
 	
 	BVHBuildNode* node = new BVHBuildNode();
 	bvhNodes.push_back(node);

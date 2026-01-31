@@ -5,6 +5,7 @@
 #include "vector.h"
 #include "point.h"
 #include "buffer.h"
+#include "mesh.h"
 #include "triangle.h"
 #include "ray.h"
 #include "interaction.h"
@@ -53,7 +54,11 @@ struct LinearBVHNode {
 	unsigned char pad[1];
 };
 
+
+
+std::vector<std::shared_ptr<Triangle>> GetTriangles(const std::vector<TriangleMesh>& meshes);
 class BVHAccel {
+public:
 	const int maxTrisInNode;
 	const SplitMethod splitMethod;
 	std::vector<std::shared_ptr<Triangle>> triangles;

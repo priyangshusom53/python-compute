@@ -10,7 +10,6 @@
 #include<vector> // C++ vector array
 #include<string>
 #include<stdexcept>
-#include<memory>
 
 constexpr const int LEFT_HANDED = 0;
 constexpr const int RIGHT_HANDED = 1;
