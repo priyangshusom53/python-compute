@@ -39,16 +39,21 @@ add_subdirectory(src/pathtracer ${CMAKE_BINARY_DIR}/pathtracer)
 pybind11_add_module(_pathtracer 
    src/pathtracer/src/python_bindings.cpp
 )
-set_source_files_properties(
-    src/pathtracer/src/python_bindings.cpp
-    PROPERTIES LANGUAGE CUDA
-)
+# set_source_files_properties(
+#     src/pathtracer/src/python_bindings.cpp
+#     PROPERTIES LANGUAGE CUDA
+# )
 
-set_target_properties(_pathtracer PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-)
+# set_target_properties(_pathtracer PROPERTIES
+#     CUDA_SEPARABLE_COMPILATION ON
+# )
+# find_package(CUDAToolkit REQUIRED)
+target_link_libraries(_pathtracer PRIVATE pathtracer pybind11::module cpython )
 
-target_link_libraries(_pathtracer PRIVATE pathtracer pybind11::module cpython)
+install(TARGETS _pathtracer
+   LIBRARY DESTINATION python_raytracer
+   RUNTIME DESTINATION python_raytracer
+)
 
 # ---- Install into python package ----
 install(TARGETS _bvh _aabb

@@ -14,7 +14,7 @@ from python_raytracer.plots.o3dplots import plot_mesh_data
 from python_raytracer.bvh import bvh
 from python_raytracer.plots.vtkvisualizer import Visualizer
 
-from python_raytracer import pathtracer
+from python_raytracer import _pathtracer_
 
 # -debug or --debug flag to enable debugging
 def main(debug:bool):
