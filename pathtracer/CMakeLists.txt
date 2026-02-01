@@ -12,13 +12,10 @@ set(PROJECT_SOURCES
    src/vector.h
    src/vector.cu
    src/point.h
-   src/point.cu
    src/normal.h
-   src/normal.cu
    src/ray.h
    src/ray.cu
    src/bounds.h
-   src/bounds.cu
    src/matrix.h
    src/transformation.h
    src/buffer.h
