@@ -29,6 +29,7 @@ set(PROJECT_SOURCES
    src/utils.h
    src/trace.h
    src/trace.cu
+   src/gltf_loader.h
 )
 
 # By default nvcc can't compile .cpp .h file, here Language property forces compilation of .cpp files using nvcc
@@ -58,3 +59,15 @@ target_compile_definitions(pathtracer PRIVATE "$<$<CONFIG:DEBUG>:DEBUG>")
 find_package(CUDAToolkit REQUIRED)
 
 target_link_libraries(pathtracer PUBLIC CUDA::cudart)
+
+# Externel dependencies
+include(FetchContent)
+FetchContent_Declare(
+    tiny_gltf
+    GIT_REPOSITORY https://github.com/syoyo/tinygltf.git
+    GIT_TAG        v2.9.7
+)
+
+FetchContent_MakeAvailable(tiny_gltf)
+
+target_link_libraries(pathtracer INTERFACE tiny_gltf)
