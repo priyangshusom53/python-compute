@@ -82,6 +82,8 @@ class StructuredBuffer {
 public:
 	StructuredBuffer();
 	StructuredBuffer(size_t elemCount);
+	StructuredBuffer(StructuredBuffer<SType, type>&& other) noexcept;
+	StructuredBuffer<SType, type>& operator=(StructuredBuffer<SType, type>&& other)noexcept;
 	size_t size() const;
 	size_t capacity() const;
 	SType* data();
@@ -145,9 +147,10 @@ struct StructuredBufferView {
 };
 
 
+#pragma region AttributeBuffer DEFINITION
 // AttributeBuffer definition
 template<typename T, BufferType type>
-AttributeBuffer<T, type>::AttributeBuffer() : data(nullptr), nDims(0), totalSize(0), currentSize(0){
+AttributeBuffer<T, type>::AttributeBuffer() : data(nullptr), nDims(0), totalSize(0), currentSize(0) {
 	shape[0] = shape[1] = shape[2] = 0;
 }
 
@@ -175,11 +178,11 @@ void AttributeBuffer<T, type>::Allocate() {
 	size_t size = shape[0] * shape[1] * shape[2] * sizeof(T);
 	if (type == BufferType::CPU_BUFFER) {
 		data = std::malloc(size);
-		if(data == nullptr){
+		if (data == nullptr) {
 			throw AttributeBufferRuntimeError(
 				std::string("AttributeBuffer Error: Failed to allocate CPU buffer of size=") +=
 				std::to_string(size)
-				);
+			);
 		}
 		totalSize = size;
 	}
@@ -204,7 +207,7 @@ void CopyData(
 	size_t bytes = nElements * sizeof(T);
 	if (bytes > (dst.totalSize - dst.currentSize)) {
 		throw AttributeBufferRuntimeError(
-			"AttributeBuffer Error: Not enough space in destination CPU buffer" + 
+			"AttributeBuffer Error: Not enough space in destination CPU buffer" +
 			std::string(", requested ") + std::to_string(bytes) +
 			std::string(", available ") + std::to_string(dst.totalSize - dst.currentSize)
 		);
@@ -225,7 +228,7 @@ void CopyData(
 		throw AttributeBufferRuntimeError(
 			"AttributeBuffer Error: Not enough space in destination GPU buffer" +
 			std::string(", requested ") + std::to_string(bytes) +
-			std::string (", available ") + std::to_string(dst.totalSize - dst.currentSize)
+			std::string(", available ") + std::to_string(dst.totalSize - dst.currentSize)
 		);
 	}
 	char* dstPtr = static_cast<char*>(dst.data) + dst.currentSize;
@@ -304,6 +307,7 @@ AttributeBuffer<T, type>::~AttributeBuffer() {
 		}
 	}
 }
+#pragma endregion
 
 #pragma region StructuredBuffer DEFINITION
 
@@ -327,6 +331,44 @@ StructuredBuffer<SType, type>::StructuredBuffer(size_t size) : _data(nullptr), _
 		if (err != cudaSuccess)
 			throw StructuredBufferRuntimeError(cudaGetErrorString(err));
 	}
+}
+
+template<typename SType, BufferType type>
+StructuredBuffer<SType, type>::StructuredBuffer(StructuredBuffer<SType, type>&& other) noexcept
+:_data(other._data),
+_size(other._size),
+_capacity(other._capacity)
+{
+	other._data = nullptr;
+	other._size = 0;
+	other._capacity = 0;
+}
+
+template<typename SType, BufferType type>
+StructuredBuffer<SType, type>& StructuredBuffer<SType, type>::operator=(StructuredBuffer<SType, type>&& other)noexcept {
+	
+	if (this == &other)
+		return *this;
+
+	// release current resource
+	if (_data) {
+		if (type == CPU_BUFFER)
+			std::free(_data);
+		else
+			cudaFree(_data);
+	}
+
+	// steal
+	_data = other._data;
+	_size = other._size;
+	_capacity = other._capacity;
+
+	// invalidate source
+	other._data = nullptr;
+	other._size = 0;
+	other._capacity = 0;
+
+	return *this;
 }
 
 template<typename SType, BufferType type>

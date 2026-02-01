@@ -15,6 +15,10 @@ struct Point3{
    CPU_GPU Point3();
    CPU_GPU Point3(T);
    CPU_GPU Point3(T, T, T);
+   CPU_GPU Point3(const Point3<T>&) = default;
+   CPU_GPU Point3<T>& operator=(const Point3<T>&) = default;
+   CPU_GPU Point3(Point3<T>&&)noexcept = default;
+   CPU_GPU Point3<T>& operator=(Point3<T>&&)noexcept = default;
    CPU_GPU T& operator[](int);
    CPU_GPU T  operator[](int) const;
    CPU_GPU explicit Point3(const Point4<T>&);

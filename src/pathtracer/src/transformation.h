@@ -14,6 +14,10 @@ struct CUDA_ALIGN(16) Transform {
 	CPU_GPU Transform();
 	CPU_GPU Transform(const Matrix4f& _matrix);
 	CPU_GPU Transform(const Matrix4f& _matrix, const Matrix4f& _invMatrix);
+	CPU_GPU Transform(const Transform&) = default;
+	CPU_GPU Transform& operator=(const Transform&) = default;
+	CPU_GPU Transform(Transform&&)noexcept = default;
+	CPU_GPU Transform& operator=(Transform&&)noexcept = default;
 	CPU_GPU static Transform Identity();
 	CPU_GPU static Transform Translate(float x, float y, float z);
 	CPU_GPU static Transform Translate(const Vector3f& v);

@@ -56,7 +56,7 @@ struct LinearBVHNode {
 
 
 
-std::vector<std::shared_ptr<Triangle>> GetTriangles(const std::vector<TriangleMesh>& meshes);
+std::vector<std::shared_ptr<Triangle>> GetTriangles(const std::vector<std::shared_ptr<TriangleMesh>>& meshes);
 class BVHAccel {
 public:
 	const int maxTrisInNode;

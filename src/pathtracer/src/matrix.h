@@ -15,6 +15,10 @@ struct CUDA_ALIGN(16) Matrix4{
 	CPU_GPU Matrix4();
 	CPU_GPU Matrix4(const T _elements[16]);
 	/*template<int N> CPU_GPU Matrix4(const T(&_r0)[N], const T(&_r1)[N], const T(&_r2)[N], const T(&_r3)[N]);*/
+	CPU_GPU Matrix4(const Matrix4<T>& other) = default;
+	CPU_GPU Matrix4<T>& operator=(const Matrix4<T>& other) = default;
+	CPU_GPU Matrix4(Matrix4<T>&& other)noexcept = default;
+	CPU_GPU Matrix4<T>& operator=(Matrix4<T>&& other)noexcept = default;
 	CPU_GPU static Matrix4<T> Identity();
 	CPU_GPU T Determinant() const;
 	CPU_GPU Matrix4<T> Transpose() const;

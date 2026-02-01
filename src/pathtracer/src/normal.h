@@ -13,6 +13,10 @@ struct Normal3
    T x,y,z;
    CPU_GPU Normal3();
    CPU_GPU Normal3(T _x, T _y, T _z);
+   CPU_GPU Normal3(const Normal3<T>&) = default;
+   CPU_GPU Normal3<T>& operator=(const Normal3<T>&) = default;
+   CPU_GPU Normal3(Normal3<T>&&) noexcept = default;
+   CPU_GPU Normal3<T>& operator=(Normal3<T>&&) noexcept = default;
    CPU_GPU explicit Normal3(const Vector3<T> &v);
    CPU_GPU explicit operator Vector3<T>() const;
    CPU_GPU T& operator[](int);

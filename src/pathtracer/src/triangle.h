@@ -14,6 +14,7 @@ struct CUDA_ALIGN(4) Triangle{
 	int meshIdx;
 	int triangleIdx;
 	Bounds3f worldBounds;
+	CPU_GPU Triangle() = default;
 	CPU_GPU Triangle(int _meshIdx, int _triangleIdx, Bounds3f& _worldBounds);
 	CPU_GPU bool Intersect(
 		Ray& ray,

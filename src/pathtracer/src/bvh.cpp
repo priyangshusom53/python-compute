@@ -1,19 +1,19 @@
 #include "bvh.h"
 
 
-std::vector<std::shared_ptr<Triangle>> GetTriangles(const std::vector<TriangleMesh>& meshes) {
+std::vector<std::shared_ptr<Triangle>> GetTriangles(const std::vector<std::shared_ptr<TriangleMesh>>& meshes) {
 	int nMeshes = meshes.size();
 	int nTriangles = 0;
 	for (int i = 0; i < nMeshes; ++i)
-		nTriangles += meshes[i].nTriangles;
+		nTriangles += meshes[i]->nTriangles;
 	std::vector<std::shared_ptr<Triangle>> triangles(nTriangles);
 	int triNumber = 0;
 	for (int i = 0; i < nMeshes; ++i) {
-		std::vector<Bounds3f> worldBounds = meshes[i].GetTriangleWorldBounds();
-		for (int j = 0; j < meshes[i].nTriangles; ++j) {
+		std::vector<Bounds3f> worldBounds = meshes[i]->GetTriangleWorldBounds();
+		for (int j = 0; j < meshes[i]->nTriangles; ++j) {
 			triangles[triNumber + j] = std::make_shared<Triangle>(i, j, worldBounds[j]);
 		}
-		triNumber += meshes[i].nTriangles;
+		triNumber += meshes[i]->nTriangles;
 	}
 	return triangles;
 }

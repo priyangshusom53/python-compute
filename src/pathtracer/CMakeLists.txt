@@ -30,6 +30,7 @@ set(PROJECT_SOURCES
    src/interaction.h
    src/soa.h
    src/utils.h
+   src/trace.h
    src/trace.cu
 )
 
@@ -37,7 +38,7 @@ set(PROJECT_SOURCES
 # set_source_files_properties(${PROJECT_SOURCES} PROPERTIES
 #                             LANGUAGE CUDA)
 
-add_library(pathtracer STATIC
+add_library(pathtracer STATIC 
    ${PROJECT_SOURCES}
 )
 

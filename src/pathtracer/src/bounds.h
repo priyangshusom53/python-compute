@@ -17,6 +17,10 @@ struct Bounds3f{
    CPU_GPU Bounds3f();
    CPU_GPU Bounds3f(const Point3f &p); 
    CPU_GPU Bounds3f(const Point3f &p1, const Point3f &p2);
+	CPU_GPU Bounds3f(const Bounds3f& other) = default;
+	CPU_GPU Bounds3f& operator=(const Bounds3f& other) = default;
+	CPU_GPU Bounds3f(Bounds3f&& other)noexcept = default;
+	CPU_GPU Bounds3f& operator=(Bounds3f&& other) = default;
    CPU_GPU const Point3f &operator[](int idx) const;
    CPU_GPU Point3f &operator[](int idx);
    CPU_GPU Vector3f Diagonal() const;
