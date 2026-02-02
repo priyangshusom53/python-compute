@@ -21,6 +21,7 @@ set(PROJECT_SOURCES
    src/buffer.h
    src/mesh.h
    src/mesh.cpp
+   src/material.h
    src/triangle.h
    src/bvh.h
    src/bvh.cpp
@@ -30,13 +31,14 @@ set(PROJECT_SOURCES
    src/trace.h
    src/trace.cu
    src/gltf_loader.h
+   src/main.cpp
 )
 
 # By default nvcc can't compile .cpp .h file, here Language property forces compilation of .cpp files using nvcc
 # set_source_files_properties(${PROJECT_SOURCES} PROPERTIES
 #                             LANGUAGE CUDA)
 
-add_library(pathtracer STATIC 
+add_executable(pathtracer 
    ${PROJECT_SOURCES}
 )
 
@@ -70,4 +72,4 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(tiny_gltf)
 
-target_link_libraries(pathtracer INTERFACE tiny_gltf)
+target_link_libraries(pathtracer PRIVATE tinygltf)

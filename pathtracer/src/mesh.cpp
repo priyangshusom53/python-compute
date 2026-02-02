@@ -132,43 +132,53 @@
 //}
 
 TriangleMesh::TriangleMesh(
-	int nTriangles,
-	const std::vector<Vector3i>& indices,
-	int nVertices,
 	const std::vector<Point3f>& positions,
+	const std::vector<Vector3i>& indices,
 	const Transform& ObjectToWorld,
 	int handedness,
-	bool calculateNormals,
 	const std::vector<Normal3f>& normals,
 	const std::vector<Vector2f>& uvs,
 	int materialIndex
-) : nTriangles(nTriangles), nVertices(nVertices), handedness(LEFT_HANDED)
+) : nTriangles(indices.size()), nVertices(positions.size()), handedness(LEFT_HANDED), 
+materialIndex(materialIndex)
 {
 	TriangleMesh& _this = *this;
-	for (int i = 0; i < _this.nTriangles; ++i)
-		_this.indices[i] = indices[i];
-
+	_this.positions = std::vector<Point3f>(nVertices);
 	for (int i = 0; i < _this.nVertices; ++i)
 		_this.positions[i] = positions[i];
 
+	if (indices.empty()) {
+		nTriangles = nVertices / 3;
+		_this.indices = std::vector<Vector3i>(nTriangles);
+		for (int i = 0; i < nTriangles; ++i) {
+			_this.indices[i] = Vector3i(3 * i, 3 * i + 1, 3 * i + 2);
+		}
+	}
+	else {
+		_this.indices = std::vector<Vector3i>(indices.size());
+		for (int i = 0; i < _this.nTriangles; ++i)
+			_this.indices[i] = indices[i];
+	}
+
 	_this.ObjectToWorld = ObjectToWorld;
 
-	if (calculateNormals)
-		CalculateNormals();
+		
 	if (!normals.empty()) {
+		_this.normals = std::vector<Normal3f>(nVertices);
 		for (int i = 0; i < _this.nVertices; ++i)
 			_this.normals[i] = normals[i];
+	}else {
+		CalculateNormals();
 	}
 
 	if (!uvs.empty()) {
+		_this.uvs = std::vector<Vector2f>(nVertices);
 		for (int i = 0; i < _this.nVertices; ++i)
 			_this.uvs[i] = uvs[i];
 	}
 
 	if (handedness == RIGHT_HANDED)
 		ChangeHandedness(handedness);
-
-	_this.materialIndex = materialIndex;
 
 }
 
@@ -219,7 +229,7 @@ void TriangleMesh::SetNormals(const std::vector<Normal3f>& normals) {
 	if (normals.size() != nVertices)
 		throw std::runtime_error("Normals array should have same size as nVertices");
 	TriangleMesh& _this = *this;
-	std::move(_this.normals);
+	_this.normals.clear();
 	std::vector<Normal3f> _normals(nVertices);
 	for (int i = 0; i < nVertices; ++i) {
 		_normals[i] = normals[i];
@@ -233,7 +243,7 @@ void TriangleMesh::SetTextureCoords(const std::vector<Vector2f>& uvs) {
 	if (uvs.size() != nVertices)
 		throw std::runtime_error("UV array should have same size as nVertices");
 	TriangleMesh& _this = *this;
-	std::move(_this.uvs);
+	_this.uvs.clear();
 	std::vector<Vector2f> _uvs(nVertices);
 	for (int i = 0; i < nVertices; ++i) {
 		_uvs[i] = uvs[i];

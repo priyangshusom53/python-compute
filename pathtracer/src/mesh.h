@@ -88,13 +88,10 @@ public:
 	int materialIndex;
 	int handedness;
 	TriangleMesh(
-		int nTriangles,
-		const std::vector<Vector3i>& indices,
-		int nVertices,
 		const std::vector<Point3f>& positions,
+		const std::vector<Vector3i>& indices = std::vector<Vector3i>(),
 		const Transform& ObjectToWorld = Transform::Identity(),
 		int handedness = LEFT_HANDED,
-		bool calculateNormals = false,
 		const std::vector<Normal3f>& normals = std::vector<Normal3f>(),
 		const std::vector<Vector2f>& uvs = std::vector<Vector2f>(),
 		int materialIndex = 0);
