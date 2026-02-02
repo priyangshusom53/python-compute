@@ -433,9 +433,38 @@ class GLTFLoader {
                 auto& texAcsr = accessors[tex_0_Idx];
                 texCoords_0.resize(texAcsr.count);
                 auto& tex_0_BufV = bufViews[texAcsr.bufferView];
-                auto& text_0_Buf = bufs[tex_0_BufV.buffer];
+                auto& tex_0_Buf = bufs[tex_0_BufV.buffer];
                 byteOffset = tex_0_BufV.byteOffset +
                     texAcsr.byteOffset;
+
+                if (texAcsr.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+                    const unsigned short* tex_0_Data =
+                        reinterpret_cast<const unsigned short*>(&tex_0_Buf.data[byteOffset]);
+                    for (int tc = 0; tc < texCoords_0.size(); ++tc) {
+                        float s = tex_0_Data[2 * tc] / 65535.0f;
+                        float t = tex_0_Data[3 * tc + 1] / 65535.0f;
+                        texCoords_0[tc] = Vector2f(s, t);
+                    }
+                }
+                else if (texAcsr.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+                    const unsigned char* tex_0_Data =
+                        reinterpret_cast<const unsigned char*>(&tex_0_Buf.data[byteOffset]);
+                    for (int tc = 0; tc < texCoords_0.size(); ++tc) {
+                        float s = tex_0_Data[2 * tc] / 255.0f;
+                        float t = tex_0_Data[3 * tc + 1] / 255.0f;
+                        texCoords_0[tc] = Vector2f(s, t);
+                    }
+                }
+                else if (texAcsr.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) {
+                    const float* tex_0_Data =
+                        reinterpret_cast<const float*>(&tex_0_Buf.data[byteOffset]);
+                    for (int tc = 0; tc < texCoords_0.size(); ++tc) {
+                        float s = tex_0_Data[2 * tc];
+                        float t = tex_0_Data[3 * tc + 1];
+                        texCoords_0[tc] = Vector2f(s, t);
+                    }
+                }
+                    
             }
             
 
