@@ -75,10 +75,13 @@ constexpr const int RIGHT_HANDED = 1;
 //	void FlipZ();
 //};
 
+/*
+*	Used in CPU only
+*/
 class TriangleMesh {
 
 public:
-	Transform ObjectToWorld;
+	/*Transform ObjectToWorld;*/
 	int nTriangles;
 	std::vector<Vector3i> indices;
 	int nVertices;
@@ -90,7 +93,6 @@ public:
 	TriangleMesh(
 		const std::vector<Point3f>& positions,
 		const std::vector<Vector3i>& indices = std::vector<Vector3i>(),
-		const Transform& ObjectToWorld = Transform::Identity(),
 		int handedness = LEFT_HANDED,
 		const std::vector<Normal3f>& normals = std::vector<Normal3f>(),
 		const std::vector<Vector2f>& uvs = std::vector<Vector2f>(),
@@ -102,20 +104,20 @@ public:
 	/*void SetIndices(int nTriangles, const int indices[]);*/
 	/*void SetPositions(int nVertices, const std::vector<Point3f>& positions);*/
 	std::vector<Bounds3f> GetTriangleObjectBounds() const;
-	std::vector<Bounds3f> GetTriangleWorldBounds() const;
+	std::vector<Bounds3f> GetTriangleWorldBounds(const Transform& ObjectToWorld) const;
 	void CalculateNormals();
 	bool HasNormals() const ;
 	void SetNormals(const std::vector<Normal3f>& normals);
 	bool HasTextureCoords() const;
 	void SetTextureCoords(const std::vector<Vector2f>& uvs);
-	void SetTransform(const Transform& ObjectToWorld);
+	/*void SetTransform(const Transform& ObjectToWorld);*/
 	void SetMaterialIdx(int materialIndex);
 	// Bakes transform into vertex positions and updates triangle bounds
 	void TransformMeshObjectSpace(const Transform& t);
-	// Modifies ObjectToWorld transform
-	void TransformMeshWorldSpace(const Transform& t);
-	std::vector<Point3f> WorldSpacePositions() const;
-	std::vector<Normal3f> WorldSpaceNormals() const;
+	//// Modifies ObjectToWorld transform
+	//void TransformMeshWorldSpace(const Transform& t);
+	std::vector<Point3f> WorldSpacePositions(const Transform& ObjectToWorld) const;
+	std::vector<Normal3f> WorldSpaceNormals(const Transform& ObjectToWorld) const;
 	TriangleMesh& ChangeHandedness(int handedness);
 private:
 	void FlipWindingOrder();

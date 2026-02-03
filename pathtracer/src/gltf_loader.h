@@ -252,6 +252,9 @@
 */
 #pragma endregion
 
+/*
+*   Used in CPU only
+*/
 struct Node {
     Transform localToWorld;
     std::shared_ptr<Node> parent;   // null for root nodes
@@ -260,6 +263,9 @@ struct Node {
     std::string name;
 };
 
+/*
+*   Used in CPU only
+*/
 struct Scene {
 
     std::vector<int> roots;
@@ -326,20 +332,24 @@ class GLTFLoader {
             return;
         }
 
-        auto tinygltfAccessors = model.accessors;
-        
+        auto& tglAcsrs = model.accessors;
+        auto& tglBufVs = model.bufferViews;
+        auto& tglBufs = model.buffers;
 
-        // Store meshes
+        // Store meshes as TriangleMesh
+        std::vector<std::shared_ptr<TriangleMesh>> triangleMeshes;
         for (int i = 0; i < model.meshes.size(); ++i) {
-
+            LoadMeshes(tglBufs, tglBufVs, tglAcsrs, model.meshes[i], triangleMeshes);
         }
 
         scene = std::make_shared<Scene>();
-        auto tinygltfScene = model.scenes[0];
+        auto& tinygltfScene = model.scenes[0];
         scene->name = tinygltfScene.name;
         scene->roots = tinygltfScene.nodes;
 
-        auto tinygltfNodes = model.nodes;
+        std::vector<std::shared_ptr<Node>> nodes;
+        //  Store gltf nodes as Node in 
+        auto& tinygltfNodes = model.nodes;
         std::queue<int> nodesQue;
         for (int i = 0; i < tinygltfScene.nodes.size(); ++i) {
             
@@ -347,7 +357,7 @@ class GLTFLoader {
             while (!nodesQue.empty()) {
                 int nodeidx = nodesQue.front();
                 nodesQue.pop();
-                auto nodeToProcess = tinygltfNodes[nodeidx];
+                auto& nodeToProcess = tinygltfNodes[nodeidx];
                 if (nodeToProcess.children.size() > 0) {
                     for (int ch = 0; ch < nodeToProcess.children.size(); ++ch) {
                         nodesQue.push(nodeToProcess.children[ch]);
@@ -391,9 +401,6 @@ class GLTFLoader {
 
             int indicesIndex = primitives[i].indices;
             bool hasIndices = indicesIndex >= 0 ? true : false;
-            int indicesCount = 0;
-            // attribute accessor.count/3 is indicesCount
-            if (indicesIndex < 0) indicesCount = pAcsr.count/3;
 
             int materialIndex = primitives[i].material;
 
@@ -402,9 +409,7 @@ class GLTFLoader {
             std::vector<Normal3f> normals;
             std::vector<Vector2f> texCoords_0;
             
-            if (hasIndices) indices.resize(accessors[indicesIndex].count);
-            if (hasTexCoord_0) texCoords_0.resize(accessors[tex_0_Idx].count);
-
+            //  Store positions
             auto& pBuf = bufs[pBufV.buffer];
             int byteOffset = pBufV.byteOffset +
                 pAcsr.byteOffset;
@@ -415,6 +420,7 @@ class GLTFLoader {
                 positions[v] = p;
             }
 
+            //  Store normals
             if (hasNormal) {
                 auto& nAcsr = accessors[nIdx];
                 normals.resize(nAcsr.count);
@@ -429,6 +435,7 @@ class GLTFLoader {
                 }
             }
 
+            //  Convert and store texCoord_0 based on given format
             if (hasTexCoord_0) {
                 auto& texAcsr = accessors[tex_0_Idx];
                 texCoords_0.resize(texAcsr.count);
@@ -442,7 +449,7 @@ class GLTFLoader {
                         reinterpret_cast<const unsigned short*>(&tex_0_Buf.data[byteOffset]);
                     for (int tc = 0; tc < texCoords_0.size(); ++tc) {
                         float s = tex_0_Data[2 * tc] / 65535.0f;
-                        float t = tex_0_Data[3 * tc + 1] / 65535.0f;
+                        float t = tex_0_Data[2 * tc + 1] / 65535.0f;
                         texCoords_0[tc] = Vector2f(s, t);
                     }
                 }
@@ -451,7 +458,7 @@ class GLTFLoader {
                         reinterpret_cast<const unsigned char*>(&tex_0_Buf.data[byteOffset]);
                     for (int tc = 0; tc < texCoords_0.size(); ++tc) {
                         float s = tex_0_Data[2 * tc] / 255.0f;
-                        float t = tex_0_Data[3 * tc + 1] / 255.0f;
+                        float t = tex_0_Data[2 * tc + 1] / 255.0f;
                         texCoords_0[tc] = Vector2f(s, t);
                     }
                 }
@@ -460,18 +467,98 @@ class GLTFLoader {
                         reinterpret_cast<const float*>(&tex_0_Buf.data[byteOffset]);
                     for (int tc = 0; tc < texCoords_0.size(); ++tc) {
                         float s = tex_0_Data[2 * tc];
-                        float t = tex_0_Data[3 * tc + 1];
+                        float t = tex_0_Data[2 * tc + 1];
                         texCoords_0[tc] = Vector2f(s, t);
                     }
                 }
                     
             }
+
+            // Store indices
+            if (hasIndices) {
+                auto& indicesAcsr = accessors[indicesIndex];
+                auto& indicesBufV = bufViews[indicesAcsr.bufferView];
+                auto& indicesBuf = bufs[indicesBufV.buffer];
+                indices.resize(indicesAcsr.count);
+                byteOffset = indicesAcsr.byteOffset + indicesBufV.byteOffset;
+                if (indicesAcsr.componentType ==
+                    TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+                    const unsigned char* indicesData =
+                        reinterpret_cast<const unsigned char*>(&indicesBuf.data[byteOffset]);
+                    for (int idx = 0; idx < indices.size(); ++idx) {
+                        int idx0 = int(indicesData[3 * idx]);
+                        int idx1 = int(indicesData[3 * idx + 1]);
+                        int idx2 = int(indicesData[3 * idx + 2]);
+                        indices[idx] = Vector3i(idx0, idx1, idx2);
+                    }
+                }
+                else if (indicesAcsr.componentType ==
+                    TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+                    const unsigned short* indicesData =
+                        reinterpret_cast<const unsigned short*>(&indicesBuf.data[byteOffset]);
+                    for (int idx = 0; idx < indices.size(); ++idx) {
+                        int idx0 = int(indicesData[3 * idx]);
+                        int idx1 = int(indicesData[3 * idx + 1]);
+                        int idx2 = int(indicesData[3 * idx + 2]);
+                        indices[idx] = Vector3i(idx0, idx1, idx2);
+                    }
+                }
+                else if (indicesAcsr.componentType ==
+                    TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
+                    const unsigned int* indicesData =
+                        reinterpret_cast<const unsigned int*>(&indicesBuf.data[byteOffset]);
+                    for (int idx = 0; idx < indices.size(); ++idx) {
+                        int idx0 = int(indicesData[3 * idx]);
+                        int idx1 = int(indicesData[3 * idx + 1]);
+                        int idx2 = int(indicesData[3 * idx + 2]);
+                        indices[idx] = Vector3i(idx0, idx1, idx2);
+                    }
+                }
+            }
+            else {
+                //  if "indices" property of "primitive" is not avaiable
+                //  accessor.count of position attribute gives number of vertices
+                //  if geometry is triangle set each 3 consecutive vertices
+                //  make 1 triangle
+                indices.resize(pAcsr.count / 3);
+                for (int idx = 0; idx < indices.size(); ++idx) {
+                    indices[idx] = Vector3i(3 * idx, 3 * idx + 1, 3 * idx + 2);
+                }
+            }
             
 
             meshes.push_back(std::make_shared<TriangleMesh>(
+                positions,
+                indices,
+                RIGHT_HANDED,
+                normals,
+                texCoords_0
             ));
         }
     }
 
+    std::shared_ptr<Node> LoadNodesRecursive(
+        const tinygltf::Node& tglRoot,
+        const std::vector<tinygltf::Node>& tglNodes,
+        const std::shared_ptr<Node>& myRoot,
+        std::vector<std::shared_ptr<Node>>& myNodes,
+        const std::vector<std::shared_ptr<TriangleMesh>>& meshes
+    ) {
+        std::shared_ptr<Node> myNode = std::make_shared<Node>();
+        std::vector<std::shared_ptr<Node>> myChildren;
+        for (int i = 0; i < tglRoot.children.size(); ++i) {
+            const auto& children = tglRoot.children;
+            myChildren.push_back(
+                LoadNodesRecursive(tglNodes[children[i]],
+                    tglNodes, myNode,myNodes,meshes));
+        }
+        myNode->children = myChildren;
+        myNode->name = tglRoot.name;
+        myNode->parent = myRoot;
+        myNode->mesh = meshes[tglRoot.mesh];
+        /*myNode->localToWorld = tglRoot.matrix*/
+        myNodes.push_back(myNode);
+        return myNode;
+    }
 };
 #endif

@@ -134,7 +134,6 @@
 TriangleMesh::TriangleMesh(
 	const std::vector<Point3f>& positions,
 	const std::vector<Vector3i>& indices,
-	const Transform& ObjectToWorld,
 	int handedness,
 	const std::vector<Normal3f>& normals,
 	const std::vector<Vector2f>& uvs,
@@ -159,9 +158,6 @@ materialIndex(materialIndex)
 		for (int i = 0; i < _this.nTriangles; ++i)
 			_this.indices[i] = indices[i];
 	}
-
-	_this.ObjectToWorld = ObjectToWorld;
-
 		
 	if (!normals.empty()) {
 		_this.normals = std::vector<Normal3f>(nVertices);
@@ -251,9 +247,9 @@ void TriangleMesh::SetTextureCoords(const std::vector<Vector2f>& uvs) {
 	_this.uvs = std::move(_uvs);
 }
 
-void TriangleMesh::SetTransform(const Transform& ObjectToWorld) {
-	this->ObjectToWorld = ObjectToWorld;
-}
+//void TriangleMesh::SetTransform(const Transform& ObjectToWorld) {
+//	this->ObjectToWorld = ObjectToWorld;
+//}
 
 void TriangleMesh::SetMaterialIdx(int materialIndex) {
 	this->materialIndex = materialIndex;
@@ -272,14 +268,14 @@ void TriangleMesh::TransformMeshObjectSpace(const Transform& t) {
 }
 
 // Modifies ObjectToWorld transform
-void TriangleMesh::TransformMeshWorldSpace(const Transform& t) {
+//void TriangleMesh::TransformMeshWorldSpace(const Transform& t) {
+//
+//	const Matrix4f newObjToWorldMat = Matrix4f::MatMul(t.matrix, ObjectToWorld.matrix);
+//	const Matrix4f newInvObjToWorldMat = Matrix4f::MatMul(ObjectToWorld.invMatrix,t.matrix);
+//	ObjectToWorld = Transform(newObjToWorldMat, newInvObjToWorldMat);
+//}
 
-	const Matrix4f newObjToWorldMat = Matrix4f::MatMul(t.matrix, ObjectToWorld.matrix);
-	const Matrix4f newInvObjToWorldMat = Matrix4f::MatMul(ObjectToWorld.invMatrix,t.matrix);
-	ObjectToWorld = Transform(newObjToWorldMat, newInvObjToWorldMat);
-}
-
-std::vector<Point3f> TriangleMesh::WorldSpacePositions() const {
+std::vector<Point3f> TriangleMesh::WorldSpacePositions(const Transform& ObjectToWorld) const {
 	std::vector<Point3f> worldPositions(nVertices);
 	for(int i = 0; i < nVertices; ++i) {
 		worldPositions.push_back(Point3f(ObjectToWorld.TransformPoint(positions[i])));
@@ -287,7 +283,7 @@ std::vector<Point3f> TriangleMesh::WorldSpacePositions() const {
 	return worldPositions;
 }
 
-std::vector<Normal3f> TriangleMesh::WorldSpaceNormals() const {
+std::vector<Normal3f> TriangleMesh::WorldSpaceNormals(const Transform& ObjectToWorld) const {
 	if (!HasNormals())
 		return std::vector<Normal3f>();
 	std::vector<Normal3f> worldNormals;
@@ -302,10 +298,6 @@ TriangleMesh& TriangleMesh::ChangeHandedness(int handedness) {
 	if (_this.handedness != handedness) {
 		FlipZ();
 		FlipWindingOrder();
-		auto swapHandMatrix = Transform::Scale(1.f, 1.f, -1.f).matrix;
-		auto newObjToWorldMat = Matrix4f::MatMul(swapHandMatrix, Matrix4f::MatMul(_this.ObjectToWorld.matrix, swapHandMatrix));
-		auto newInvObjToWorldMat = Matrix4f::MatMul(swapHandMatrix, Matrix4f::MatMul(_this.ObjectToWorld.invMatrix, swapHandMatrix));
-		_this.ObjectToWorld = Transform(newObjToWorldMat, newInvObjToWorldMat);
 		_this.handedness = handedness;
 	}
 	return *this;
@@ -334,8 +326,8 @@ std::vector<Bounds3f> TriangleMesh::GetTriangleObjectBounds() const {
 	}
 	return triangleObjectBounds;
 }
-std::vector<Bounds3f> TriangleMesh::GetTriangleWorldBounds() const {
-	std::vector<Point3f> worldPositions = WorldSpacePositions();
+std::vector<Bounds3f> TriangleMesh::GetTriangleWorldBounds(const Transform& ObjectToWorld) const {
+	std::vector<Point3f> worldPositions = WorldSpacePositions(ObjectToWorld);
 	std::vector<Bounds3f> triangleWorldBounds(nTriangles);
 	for (int i = 0; i < nTriangles; ++i) {
 		Vector3i idx = indices[i];

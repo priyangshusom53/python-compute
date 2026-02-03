@@ -17,6 +17,7 @@ set(PROJECT_SOURCES
    src/ray.cu
    src/bounds.h
    src/matrix.h
+   src/quaternion.h
    src/transformation.h
    src/buffer.h
    src/mesh.h
